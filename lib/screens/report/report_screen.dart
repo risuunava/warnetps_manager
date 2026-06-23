@@ -6,7 +6,7 @@ import '../../providers/services_provider.dart';
 
 final reportPeriodProvider = StateProvider<String>((ref) => 'today');
 
-final periodStatsProvider = FutureProvider.family<Map<String, dynamic>, String>((ref, period) async {
+final periodStatsProvider = FutureProvider.autoDispose.family<Map<String, dynamic>, String>((ref, period) async {
   final service = ref.watch(reportServiceProvider);
   return await service.getPeriodStats(period);
 });
@@ -34,6 +34,15 @@ class ReportScreen extends ConsumerWidget {
           style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, letterSpacing: 1.0),
         ),
         elevation: 0,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.refresh, color: Colors.white70),
+            tooltip: 'Refresh Data',
+            onPressed: () {
+              ref.invalidate(periodStatsProvider);
+            },
+          ),
+        ],
       ),
       body: SingleChildScrollView(
         child: Padding(

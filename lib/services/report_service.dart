@@ -6,22 +6,23 @@ class ReportService {
   final _db = FirebaseFirestore.instance;
 
   // Fetch completed sessions in a time range
+  // Query hanya pakai endTime range (1 field) untuk menghindari kebutuhan composite index.
+  // Filter status='completed' dilakukan di sisi client.
   Future<List<SessionModel>> getCompletedSessions(DateTime start, DateTime end) async {
-    try {
-      final snapshot = await _db
-          .collection('sessions')
-          .where('status', isEqualTo: 'completed')
-          .where('endTime', isGreaterThanOrEqualTo: Timestamp.fromDate(start))
-          .where('endTime', isLessThanOrEqualTo: Timestamp.fromDate(end))
-          .get();
+    // Pastikan end mencakup akhir hari (23:59:59)
+    final endOfDay = DateTime(end.year, end.month, end.day, 23, 59, 59);
 
-      return snapshot.docs
-          .map((doc) => SessionModel.fromMap(doc.data(), doc.id))
-          .toList();
-    } catch (e) {
-      print('Error getting completed sessions for report: $e');
-      return [];
-    }
+    final snapshot = await _db
+        .collection('sessions')
+        .where('endTime', isGreaterThanOrEqualTo: Timestamp.fromDate(start))
+        .where('endTime', isLessThanOrEqualTo: Timestamp.fromDate(endOfDay))
+        .get();
+
+    // Filter completed di client side - tidak butuh composite index
+    return snapshot.docs
+        .map((doc) => SessionModel.fromMap(doc.data(), doc.id))
+        .where((s) => s.status == 'completed')
+        .toList();
   }
 
   // Generate Report Statistics from sessions
@@ -104,7 +105,7 @@ class ReportService {
     } else if (period == 'week') {
       start = now.subtract(const Duration(days: 7));
     } else if (period == 'month') {
-      start = DateTime(now.year, now.month - 1, now.day);
+      start = DateTime(now.year, now.month, 1);
     } else {
       start = DateTime(now.year, now.month, now.day);
     }

@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "663653799994",
+    "project_id": "warnetps-manager",
+    "storage_bucket": "warnetps-manager.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:663653799994:android:cf4ebf6f4b01d74d757d03",
+        "android_client_info": {
+          "package_name": "com.example.warnetps_manager"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDQkBmZAphwl8OXXCrWrV3lzthEiU4YQtY"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

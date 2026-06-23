@@ -128,34 +128,35 @@ lib/
 
 ```yaml
 dependencies:
-  flutter:
-    sdk: flutter
+   flutter:
+      sdk: flutter
 
-  # Firebase
-  firebase_core: ^3.6.0
-  firebase_auth: ^5.3.1
-  cloud_firestore: ^5.4.4
-  firebase_storage: ^12.3.2
+   # Firebase
+   firebase_core: ^3.6.0
+   firebase_auth: ^5.3.1
+   cloud_firestore: ^5.4.4
+   # firebase_storage → TIDAK DIPAKAI (butuh kartu kredit, zero cost)
 
-  # State Management
-  flutter_riverpod: ^2.5.1
-  riverpod_annotation: ^2.3.5
+   # State Management
+   flutter_riverpod: ^2.5.1
+   riverpod_annotation: ^2.3.5
 
-  # Navigation
-  go_router: ^14.2.7
+   # Navigation
+   go_router: ^14.2.7
 
-  # UI Helpers
-  intl: ^0.19.0             # Format tanggal & angka
-  fl_chart: ^0.69.0          # Grafik laporan
-  cached_network_image: ^3.4.1  # Load foto member
-  image_picker: ^1.1.2       # Ambil foto dari kamera/galeri
+   # UI Helpers
+   intl: ^0.19.0             # Format tanggal & angka (Rp 15.000, 14:30)
+   fl_chart: ^0.69.0         # Grafik laporan pendapatan
 
 dev_dependencies:
-  flutter_test:
-    sdk: flutter
-  build_runner: ^2.4.12
-  riverpod_generator: ^2.4.3
+   flutter_test:
+      sdk: flutter
+   build_runner: ^2.4.12
+   riverpod_generator: ^2.4.3
 ```
+
+> ℹ️ **Kenapa tidak ada firebase_storage, image_picker, cached_network_image?**
+> Firebase Storage butuh kartu kredit untuk aktivasi. Fitur foto member diganti dengan **avatar inisial nama** (contoh: "Budi Santoso" → lingkaran dengan huruf "BS"). Ini zero cost dan tidak mengurangi fungsi utama aplikasi.
 
 4. Setelah edit, klik **`Pub get`** yang muncul di atas editor, ATAU buka Terminal dan ketik:
 ```bash
@@ -179,7 +180,8 @@ flutter pub get
 Di sidebar Firebase Console:
 - **Authentication** → `Get started` → aktifkan **Email/Password**
 - **Firestore Database** → `Create database` → pilih **`Start in test mode`** → pilih region `asia-southeast1` (Singapore, paling dekat)
-- **Storage** → `Get started` → `Start in test mode`
+
+> ⚠️ **Storage TIDAK perlu diaktifkan** — butuh kartu kredit. Foto member diganti avatar inisial nama, zero cost.
 
 **C. Hubungkan Firebase ke Flutter (FlutterFire CLI)**
 
@@ -214,37 +216,37 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'firebase_options.dart';
 
 void main() async {
-  WidgetsFlutterBinding.ensureInitialized();
-  await Firebase.initializeApp(
-    options: DefaultFirebaseOptions.currentPlatform,
-  );
-  runApp(
-    const ProviderScope(  // Wrapper untuk Riverpod
-      child: MyApp(),
-    ),
-  );
+   WidgetsFlutterBinding.ensureInitialized();
+   await Firebase.initializeApp(
+      options: DefaultFirebaseOptions.currentPlatform,
+   );
+   runApp(
+      const ProviderScope(  // Wrapper untuk Riverpod
+         child: MyApp(),
+      ),
+   );
 }
 
 class MyApp extends StatelessWidget {
-  const MyApp({super.key});
+   const MyApp({super.key});
 
-  @override
-  Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'WarnetPS Manager',
-      theme: ThemeData.dark().copyWith(
-        colorScheme: const ColorScheme.dark(
-          primary: Color(0xFF0088FF),
-          secondary: Color(0xFF00D4FF),
-        ),
-      ),
-      home: const Scaffold(
-        body: Center(
-          child: Text('Firebase Connected!'), // Placeholder dulu
-        ),
-      ),
-    );
-  }
+   @override
+   Widget build(BuildContext context) {
+      return MaterialApp(
+         title: 'WarnetPS Manager',
+         theme: ThemeData.dark().copyWith(
+            colorScheme: const ColorScheme.dark(
+               primary: Color(0xFF0088FF),
+               secondary: Color(0xFF00D4FF),
+            ),
+         ),
+         home: const Scaffold(
+            body: Center(
+               child: Text('Firebase Connected!'), // Placeholder dulu
+            ),
+         ),
+      );
+   }
 }
 ```
 
@@ -278,98 +280,98 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 class LoginScreen extends ConsumerStatefulWidget {
-  const LoginScreen({super.key});
+   const LoginScreen({super.key});
 
-  @override
-  ConsumerState<LoginScreen> createState() => _LoginScreenState();
+   @override
+   ConsumerState<LoginScreen> createState() => _LoginScreenState();
 }
 
 class _LoginScreenState extends ConsumerState<LoginScreen> {
-  final _emailController = TextEditingController();
-  final _passwordController = TextEditingController();
-  bool _isLoading = false;
+   final _emailController = TextEditingController();
+   final _passwordController = TextEditingController();
+   bool _isLoading = false;
 
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: const Color(0xFF0A0A0F),
-      body: Center(
-        child: Padding(
-          padding: const EdgeInsets.all(32.0),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              // Logo / Judul
-              const Icon(Icons.computer, color: Color(0xFF0088FF), size: 64),
-              const SizedBox(height: 16),
-              const Text(
-                'WarnetPS Manager',
-                style: TextStyle(
-                  fontSize: 24,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.white,
-                ),
-              ),
-              const SizedBox(height: 48),
+   @override
+   Widget build(BuildContext context) {
+      return Scaffold(
+         backgroundColor: const Color(0xFF0A0A0F),
+         body: Center(
+            child: Padding(
+               padding: const EdgeInsets.all(32.0),
+               child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                     // Logo / Judul
+                     const Icon(Icons.computer, color: Color(0xFF0088FF), size: 64),
+                     const SizedBox(height: 16),
+                     const Text(
+                        'WarnetPS Manager',
+                        style: TextStyle(
+                           fontSize: 24,
+                           fontWeight: FontWeight.bold,
+                           color: Colors.white,
+                        ),
+                     ),
+                     const SizedBox(height: 48),
 
-              // Input Email
-              TextField(
-                controller: _emailController,
-                keyboardType: TextInputType.emailAddress,
-                decoration: const InputDecoration(
-                  labelText: 'Email',
-                  prefixIcon: Icon(Icons.email),
-                  border: OutlineInputBorder(),
-                ),
-              ),
-              const SizedBox(height: 16),
+                     // Input Email
+                     TextField(
+                        controller: _emailController,
+                        keyboardType: TextInputType.emailAddress,
+                        decoration: const InputDecoration(
+                           labelText: 'Email',
+                           prefixIcon: Icon(Icons.email),
+                           border: OutlineInputBorder(),
+                        ),
+                     ),
+                     const SizedBox(height: 16),
 
-              // Input Password
-              TextField(
-                controller: _passwordController,
-                obscureText: true,
-                decoration: const InputDecoration(
-                  labelText: 'Password',
-                  prefixIcon: Icon(Icons.lock),
-                  border: OutlineInputBorder(),
-                ),
-              ),
-              const SizedBox(height: 24),
+                     // Input Password
+                     TextField(
+                        controller: _passwordController,
+                        obscureText: true,
+                        decoration: const InputDecoration(
+                           labelText: 'Password',
+                           prefixIcon: Icon(Icons.lock),
+                           border: OutlineInputBorder(),
+                        ),
+                     ),
+                     const SizedBox(height: 24),
 
-              // Tombol Login
-              SizedBox(
-                width: double.infinity,
-                height: 48,
-                child: ElevatedButton(
-                  onPressed: _isLoading ? null : _handleLogin,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF0088FF),
-                  ),
-                  child: _isLoading
-                      ? const CircularProgressIndicator(color: Colors.white)
-                      : const Text('Masuk', style: TextStyle(fontSize: 16)),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
+                     // Tombol Login
+                     SizedBox(
+                        width: double.infinity,
+                        height: 48,
+                        child: ElevatedButton(
+                           onPressed: _isLoading ? null : _handleLogin,
+                           style: ElevatedButton.styleFrom(
+                              backgroundColor: const Color(0xFF0088FF),
+                           ),
+                           child: _isLoading
+                                   ? const CircularProgressIndicator(color: Colors.white)
+                                   : const Text('Masuk', style: TextStyle(fontSize: 16)),
+                        ),
+                     ),
+                  ],
+               ),
+            ),
+         ),
+      );
+   }
 
-  Future<void> _handleLogin() async {
-    // Akan diisi di langkah berikutnya
-    setState(() => _isLoading = true);
-    await Future.delayed(const Duration(seconds: 1)); // placeholder
-    setState(() => _isLoading = false);
-  }
+   Future<void> _handleLogin() async {
+      // Akan diisi di langkah berikutnya
+      setState(() => _isLoading = true);
+      await Future.delayed(const Duration(seconds: 1)); // placeholder
+      setState(() => _isLoading = false);
+   }
 
-  @override
-  void dispose() {
-    _emailController.dispose();
-    _passwordController.dispose();
-    super.dispose();
-  }
+   @override
+   void dispose() {
+      _emailController.dispose();
+      _passwordController.dispose();
+      super.dispose();
+   }
 }
 ```
 
@@ -382,37 +384,37 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 class AuthService {
-  final _auth = FirebaseAuth.instance;
-  final _db = FirebaseFirestore.instance;
+   final _auth = FirebaseAuth.instance;
+   final _db = FirebaseFirestore.instance;
 
-  // Cek siapa yang sedang login
-  User? get currentUser => _auth.currentUser;
+   // Cek siapa yang sedang login
+   User? get currentUser => _auth.currentUser;
 
-  // Stream perubahan status login
-  Stream<User?> get authStateChanges => _auth.authStateChanges();
+   // Stream perubahan status login
+   Stream<User?> get authStateChanges => _auth.authStateChanges();
 
-  // Login
-  Future<Map<String, dynamic>> login(String email, String password) async {
-    try {
-      final credential = await _auth.signInWithEmailAndPassword(
-        email: email,
-        password: password,
-      );
-      // Ambil data role dari Firestore
-      final userDoc = await _db
-          .collection('users')
-          .doc(credential.user!.uid)
-          .get();
-      return {'success': true, 'role': userDoc['role']};
-    } on FirebaseAuthException catch (e) {
-      return {'success': false, 'message': e.message};
-    }
-  }
+   // Login
+   Future<Map<String, dynamic>> login(String email, String password) async {
+      try {
+         final credential = await _auth.signInWithEmailAndPassword(
+            email: email,
+            password: password,
+         );
+         // Ambil data role dari Firestore
+         final userDoc = await _db
+                 .collection('users')
+                 .doc(credential.user!.uid)
+                 .get();
+         return {'success': true, 'role': userDoc['role']};
+      } on FirebaseAuthException catch (e) {
+         return {'success': false, 'message': e.message};
+      }
+   }
 
-  // Logout
-  Future<void> logout() async {
-    await _auth.signOut();
-  }
+   // Logout
+   Future<void> logout() async {
+      await _auth.signOut();
+   }
 }
 ```
 
@@ -480,158 +482,158 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 class DashboardScreen extends StatelessWidget {
-  const DashboardScreen({super.key});
+   const DashboardScreen({super.key});
 
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: const Color(0xFF0A0A0F),
-      appBar: AppBar(
-        backgroundColor: const Color(0xFF12121A),
-        title: const Text('WarnetPS Manager'),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.logout),
-            onPressed: () {/* logout */},
-          ),
-        ],
-      ),
-      body: Column(
-        children: [
-          // Bagian PC
-          _buildSectionHeader('💻 Komputer (PC)'),
-          _buildUnitGrid(unitType: 'pc'),
+   @override
+   Widget build(BuildContext context) {
+      return Scaffold(
+         backgroundColor: const Color(0xFF0A0A0F),
+         appBar: AppBar(
+            backgroundColor: const Color(0xFF12121A),
+            title: const Text('WarnetPS Manager'),
+            actions: [
+               IconButton(
+                  icon: const Icon(Icons.logout),
+                  onPressed: () {/* logout */},
+               ),
+            ],
+         ),
+         body: Column(
+            children: [
+               // Bagian PC
+               _buildSectionHeader('💻 Komputer (PC)'),
+               _buildUnitGrid(unitType: 'pc'),
 
-          // Bagian PS
-          _buildSectionHeader('🎮 PlayStation (PS)'),
-          _buildUnitGrid(unitType: 'ps'),
-        ],
-      ),
-    );
-  }
+               // Bagian PS
+               _buildSectionHeader('🎮 PlayStation (PS)'),
+               _buildUnitGrid(unitType: 'ps'),
+            ],
+         ),
+      );
+   }
 
-  Widget _buildSectionHeader(String title) {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
-      child: Align(
-        alignment: Alignment.centerLeft,
-        child: Text(
-          title,
-          style: const TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.bold,
-            color: Colors.white70,
-          ),
-        ),
-      ),
-    );
-  }
+   Widget _buildSectionHeader(String title) {
+      return Padding(
+         padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+         child: Align(
+            alignment: Alignment.centerLeft,
+            child: Text(
+               title,
+               style: const TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.white70,
+               ),
+            ),
+         ),
+      );
+   }
 
-  Widget _buildUnitGrid({required String unitType}) {
-    return StreamBuilder<QuerySnapshot>(
-      // StreamBuilder = otomatis update ketika data Firestore berubah
-      stream: FirebaseFirestore.instance
-          .collection('units')
-          .where('type', isEqualTo: unitType)
-          .snapshots(),
-      builder: (context, snapshot) {
-        if (!snapshot.hasData) {
-          return const Center(child: CircularProgressIndicator());
-        }
-        final units = snapshot.data!.docs;
-        return GridView.builder(
-          shrinkWrap: true,
-          physics: const NeverScrollableScrollPhysics(),
-          padding: const EdgeInsets.symmetric(horizontal: 16),
-          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-            crossAxisCount: 3, // 3 kolom
-            crossAxisSpacing: 8,
-            mainAxisSpacing: 8,
-            childAspectRatio: 1.2,
-          ),
-          itemCount: units.length,
-          itemBuilder: (context, index) {
-            final unit = units[index].data() as Map<String, dynamic>;
-            return _UnitCard(unit: unit, unitId: units[index].id);
-          },
-        );
-      },
-    );
-  }
+   Widget _buildUnitGrid({required String unitType}) {
+      return StreamBuilder<QuerySnapshot>(
+         // StreamBuilder = otomatis update ketika data Firestore berubah
+         stream: FirebaseFirestore.instance
+                 .collection('units')
+                 .where('type', isEqualTo: unitType)
+                 .snapshots(),
+         builder: (context, snapshot) {
+            if (!snapshot.hasData) {
+               return const Center(child: CircularProgressIndicator());
+            }
+            final units = snapshot.data!.docs;
+            return GridView.builder(
+               shrinkWrap: true,
+               physics: const NeverScrollableScrollPhysics(),
+               padding: const EdgeInsets.symmetric(horizontal: 16),
+               gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                  crossAxisCount: 3, // 3 kolom
+                  crossAxisSpacing: 8,
+                  mainAxisSpacing: 8,
+                  childAspectRatio: 1.2,
+               ),
+               itemCount: units.length,
+               itemBuilder: (context, index) {
+                  final unit = units[index].data() as Map<String, dynamic>;
+                  return _UnitCard(unit: unit, unitId: units[index].id);
+               },
+            );
+         },
+      );
+   }
 }
 
 class _UnitCard extends StatelessWidget {
-  final Map<String, dynamic> unit;
-  final String unitId;
+   final Map<String, dynamic> unit;
+   final String unitId;
 
-  const _UnitCard({required this.unit, required this.unitId});
+   const _UnitCard({required this.unit, required this.unitId});
 
-  @override
-  Widget build(BuildContext context) {
-    final status = unit['status'] as String;
-    final isAvailable = status == 'available';
-    final isInUse = status == 'in_use';
+   @override
+   Widget build(BuildContext context) {
+      final status = unit['status'] as String;
+      final isAvailable = status == 'available';
+      final isInUse = status == 'in_use';
 
-    final statusColor = isAvailable
-        ? const Color(0xFF00C853)
-        : isInUse
-            ? const Color(0xFFFF1744)
-            : const Color(0xFF616161);
+      final statusColor = isAvailable
+              ? const Color(0xFF00C853)
+              : isInUse
+              ? const Color(0xFFFF1744)
+              : const Color(0xFF616161);
 
-    return GestureDetector(
-      onTap: () {
-        // TODO: Buka dialog start/stop sesi
-      },
-      child: Container(
-        decoration: BoxDecoration(
-          color: const Color(0xFF12121A),
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: statusColor.withOpacity(0.5), width: 1.5),
-        ),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              unit['type'] == 'pc' ? Icons.computer : Icons.sports_esports,
-              color: statusColor,
-              size: 28,
+      return GestureDetector(
+         onTap: () {
+            // TODO: Buka dialog start/stop sesi
+         },
+         child: Container(
+            decoration: BoxDecoration(
+               color: const Color(0xFF12121A),
+               borderRadius: BorderRadius.circular(12),
+               border: Border.all(color: statusColor.withOpacity(0.5), width: 1.5),
             ),
-            const SizedBox(height: 4),
-            Text(
-              unit['name'],
-              style: const TextStyle(
-                color: Colors.white,
-                fontSize: 12,
-                fontWeight: FontWeight.bold,
-              ),
-              textAlign: TextAlign.center,
+            child: Column(
+               mainAxisAlignment: MainAxisAlignment.center,
+               children: [
+                  Icon(
+                     unit['type'] == 'pc' ? Icons.computer : Icons.sports_esports,
+                     color: statusColor,
+                     size: 28,
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                     unit['name'],
+                     style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 12,
+                        fontWeight: FontWeight.bold,
+                     ),
+                     textAlign: TextAlign.center,
+                  ),
+                  if (unit['psType'] != null)
+                     Text(
+                        unit['psType'].toUpperCase(),
+                        style: TextStyle(color: statusColor, fontSize: 10),
+                     ),
+                  const SizedBox(height: 4),
+                  Container(
+                     padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                     decoration: BoxDecoration(
+                        color: statusColor.withOpacity(0.2),
+                        borderRadius: BorderRadius.circular(4),
+                     ),
+                     child: Text(
+                        isAvailable
+                                ? 'Tersedia'
+                                : isInUse
+                                ? 'Dipakai'
+                                : 'Maintenance',
+                        style: TextStyle(color: statusColor, fontSize: 9),
+                     ),
+                  ),
+               ],
             ),
-            if (unit['psType'] != null)
-              Text(
-                unit['psType'].toUpperCase(),
-                style: TextStyle(color: statusColor, fontSize: 10),
-              ),
-            const SizedBox(height: 4),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-              decoration: BoxDecoration(
-                color: statusColor.withOpacity(0.2),
-                borderRadius: BorderRadius.circular(4),
-              ),
-              child: Text(
-                isAvailable
-                    ? 'Tersedia'
-                    : isInUse
-                        ? 'Dipakai'
-                        : 'Maintenance',
-                style: TextStyle(color: statusColor, fontSize: 9),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
+         ),
+      );
+   }
 }
 ```
 

@@ -67,13 +67,18 @@ final tariffsStreamProvider = StreamProvider((ref) {
 final todayCompletedSessionsProvider = StreamProvider<List<SessionModel>>((ref) {
   final now = DateTime.now();
   final startOfDay = DateTime(now.year, now.month, now.day);
+  final endOfDay = DateTime(now.year, now.month, now.day, 23, 59, 59);
+  
+  // Use only single-field range filter (no composite index required),
+  // then filter 'completed' status client-side.
   return FirebaseFirestore.instance
       .collection('sessions')
-      .where('status', isEqualTo: 'completed')
       .where('endTime', isGreaterThanOrEqualTo: Timestamp.fromDate(startOfDay))
+      .where('endTime', isLessThanOrEqualTo: Timestamp.fromDate(endOfDay))
       .snapshots()
       .map((snapshot) => snapshot.docs
           .map((doc) => SessionModel.fromMap(doc.data(), doc.id))
+          .where((session) => session.status == 'completed')
           .toList());
 });
 

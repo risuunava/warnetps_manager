@@ -28,9 +28,13 @@ dependencies:
   fl_chart: ^0.69.0          # Grafik laporan
   cached_network_image: ^3.4.1  # Load foto member
   image_picker: ^1.1.2       # Ambil foto dari kamera/galeri
+  google_fonts: ^8.1.0
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
   build_runner: ^2.4.12
   riverpod_generator: ^2.4.3
+
+flutter:
+  uses-material-design: true

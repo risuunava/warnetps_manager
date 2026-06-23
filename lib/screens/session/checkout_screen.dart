@@ -2,8 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
+import 'package:google_fonts/google_fonts.dart';
 import '../../models/session_model.dart';
 import '../../providers/services_provider.dart';
+import '../../theme/app_theme.dart';
+import '../../widgets/shared/retro_scaffold.dart';
 
 class CheckoutScreen extends ConsumerStatefulWidget {
   final String sessionId;
@@ -59,17 +62,46 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
       decimalDigits: 0,
     );
 
-    return Scaffold(
-      backgroundColor: const Color(0xFF0A0A0F),
-      appBar: AppBar(
-        backgroundColor: const Color(0xFF12121A),
-        title: const Text('KASIR & PEMBAYARAN', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-        elevation: 0,
-      ),
-      body: _isLoading
-          ? const Center(child: CircularProgressIndicator())
+    return RetroScaffold(
+      showBackButton: true,
+      onBackTap: () => context.pop(),
+      child: _isLoading
+          ? const Center(
+              child: CircularProgressIndicator(color: AppColors.frameInk),
+            )
           : _errorMessage != null
-              ? Center(child: Text('Error: $_errorMessage', style: const TextStyle(color: Colors.redAccent)))
+              ? Center(
+                  child: Container(
+                    width: 320,
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: AppColors.tintSalmon, // Salmon warning/error fill
+                      border: Border.all(color: AppColors.frameInk, width: 2.0),
+                    ),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          'BILLING ERROR / KESALAHAN BIAYA',
+                          style: GoogleFonts.arimo(
+                            fontWeight: FontWeight.w900,
+                            fontSize: 12,
+                            color: AppColors.ink,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          _errorMessage!,
+                          style: GoogleFonts.tinos(
+                            fontSize: 13,
+                            color: AppColors.ink,
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+                      ],
+                    ),
+                  ),
+                )
               : activeSessionsStream.when(
                   data: (sessions) {
                     SessionModel? session;
@@ -82,19 +114,57 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
 
                     if (session == null) {
                       return Center(
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            const Icon(Icons.check_circle_outlined, color: Color(0xFF00C853), size: 54),
-                            const SizedBox(height: 16),
-                            const Text('Pembayaran Sukses & Selesai', style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
-                            const SizedBox(height: 24),
-                            ElevatedButton(
-                              onPressed: () => context.go('/'),
-                              style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF0088FF)),
-                              child: const Text('Kembali ke Dashboard'),
-                            ),
-                          ],
+                        child: Container(
+                          width: 320,
+                          padding: const EdgeInsets.all(20),
+                          decoration: BoxDecoration(
+                            color: AppColors.canvas,
+                            border: Border.all(color: AppColors.frameInk, width: 2.0),
+                          ),
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              const Icon(Icons.check_circle_outline, color: AppColors.tintOlive, size: 54),
+                              const SizedBox(height: 16),
+                              Text(
+                                'TRANSACTION SUCCESSFUL / PEMBAYARAN SUKSES',
+                                style: GoogleFonts.arimo(
+                                  fontWeight: FontWeight.w900,
+                                  fontSize: 12,
+                                  color: AppColors.ink,
+                                ),
+                                textAlign: TextAlign.center,
+                              ),
+                              const SizedBox(height: 8),
+                              Text(
+                                'Sesi telah diselesaikan & pembayaran berhasil disimpan.',
+                                style: GoogleFonts.tinos(
+                                  fontSize: 14,
+                                  color: AppColors.ink,
+                                ),
+                                textAlign: TextAlign.center,
+                              ),
+                              const SizedBox(height: 24),
+                              GestureDetector(
+                                onTap: () => context.go('/'),
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 16),
+                                  decoration: BoxDecoration(
+                                    color: AppColors.frameInk,
+                                    border: Border.all(color: AppColors.frameInk),
+                                  ),
+                                  child: Text(
+                                    'KEMBALI KE DASHBOARD',
+                                    style: GoogleFonts.arimo(
+                                      color: AppColors.canvas,
+                                      fontWeight: FontWeight.w900,
+                                      fontSize: 12,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
                       );
                     }
@@ -102,186 +172,295 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                     final currentSession = session;
 
                     return SingleChildScrollView(
+                      physics: const AlwaysScrollableScrollPhysics(),
                       child: Padding(
-                        padding: const EdgeInsets.all(20.0),
-                        child: Column(
-                          children: [
-                            // Receipt Card
-                            Container(
-                              decoration: BoxDecoration(
-                                color: const Color(0xFF12121A),
-                                borderRadius: BorderRadius.circular(20),
-                                border: Border.all(color: Colors.white10),
-                              ),
-                              child: Column(
-                                children: [
-                                  // Header
-                                  Padding(
-                                    padding: const EdgeInsets.all(20.0),
-                                    child: Column(
-                                      children: [
-                                        const Icon(Icons.sports_esports_outlined, color: Color(0xFF0088FF), size: 36),
-                                        const SizedBox(height: 8),
-                                        const Text(
-                                          'WARNET & PS MANAGER',
-                                          style: TextStyle(fontSize: 14, fontWeight: FontWeight.w900, color: Colors.white, letterSpacing: 1.0),
-                                        ),
-                                        const Text(
-                                          'Jl. Raya Cyber No. 404, Jakarta',
-                                          style: TextStyle(fontSize: 10, color: Colors.white38),
-                                        ),
-                                        const SizedBox(height: 12),
-                                        const Text(
-                                          'STRUK DIGITAL RESMI',
-                                          style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Color(0xFF00D4FF), letterSpacing: 1.0),
-                                        ),
-                                        const SizedBox(height: 6),
-                                        Text(
-                                          'Sesi: ${currentSession.id.substring(0, 8).toUpperCase()}',
-                                          style: const TextStyle(fontSize: 10, color: Colors.white38),
-                                        ),
-                                      ],
-                                    ),
+                        padding: const EdgeInsets.all(16.0),
+                        child: Center(
+                          child: ConstrainedBox(
+                            constraints: const BoxConstraints(maxWidth: 600),
+                            child: Column(
+                              children: [
+                                // Receipt / Invoice Card
+                                Container(
+                                  width: double.infinity,
+                                  decoration: BoxDecoration(
+                                    color: AppColors.canvas,
+                                    border: Border.all(color: AppColors.frameInk, width: 2.0),
                                   ),
-
-                                  _buildDashedLine(),
-
-                                  // Details
-                                  Padding(
-                                    padding: const EdgeInsets.all(20.0),
-                                    child: Column(
-                                      crossAxisAlignment: CrossAxisAlignment.start,
-                                      children: [
-                                        _buildReceiptRow('Unit Bermain', currentSession.unitName),
-                                        _buildReceiptRow('Pelanggan', currentSession.customerName),
-                                        _buildReceiptRow('Waktu Mulai', DateFormat('HH:mm').format(currentSession.startTime)),
-                                        _buildReceiptRow('Waktu Selesai', DateFormat('HH:mm').format(DateTime.now())),
-                                        _buildReceiptRow('Durasi Total', '${_billingDetails!['durationMinutes']} Menit'),
-                                        const SizedBox(height: 12),
-                                        const Divider(color: Colors.white24),
-                                        const SizedBox(height: 12),
-
-                                        _buildReceiptRow(
-                                          'Tarif Unit (${currencyFormatter.format(_billingDetails!['hourlyRate'])}/j)',
-                                          currencyFormatter.format(_billingDetails!['baseSubtotal']),
-                                        ),
-                                        if (currentSession.memberId != null)
-                                          _buildReceiptRow(
-                                            'Diskon Member (${(_billingDetails!['discountPercentage'] * 100).toInt()}%)',
-                                            '- ${currencyFormatter.format(_billingDetails!['discount'])}',
-                                            isDiscount: true,
-                                          ),
-
-                                        if (currentSession.extras.isNotEmpty) ...[
-                                          const SizedBox(height: 8),
-                                          const Text(
-                                            'Makanan & Minuman:',
-                                            style: TextStyle(color: Colors.white54, fontSize: 11, fontWeight: FontWeight.bold),
-                                          ),
-                                          ...currentSession.extras.map((extra) => Padding(
-                                                padding: const EdgeInsets.only(left: 10.0, top: 4.0),
-                                                child: _buildReceiptRow(extra.name, currencyFormatter.format(extra.price), isExtra: true),
-                                              )),
-                                        ],
-
-                                        const SizedBox(height: 16),
-                                        const Divider(color: Colors.white24),
-                                        const SizedBox(height: 16),
-
-                                        Row(
-                                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      // Top Header Band
+                                      Container(
+                                        width: double.infinity,
+                                        color: AppColors.tintSteel,
+                                        padding: const EdgeInsets.all(16.0),
+                                        child: Column(
                                           children: [
-                                            const Text(
-                                              'TOTAL BAYAR',
-                                              style: TextStyle(color: Colors.white, fontWeight: FontWeight.w900, fontSize: 15),
+                                            Text(
+                                              'WARNET & PS MANAGER',
+                                              style: GoogleFonts.arimo(
+                                                fontSize: 16,
+                                                fontWeight: FontWeight.w900,
+                                                color: AppColors.ink,
+                                                letterSpacing: 1.0,
+                                              ),
+                                            ),
+                                            const SizedBox(height: 2),
+                                            Text(
+                                              'Jl. Raya Cyber No. 404, Jakarta',
+                                              style: GoogleFonts.tinos(
+                                                fontSize: 12,
+                                                color: AppColors.ink,
+                                              ),
+                                            ),
+                                            const SizedBox(height: 8),
+                                            Text(
+                                              'DIGITAL INVOICE / STRUK RESMI',
+                                              style: GoogleFonts.arimo(
+                                                fontSize: 11,
+                                                fontWeight: FontWeight.w900,
+                                                color: AppColors.primary, // Dell Red
+                                                letterSpacing: 1.0,
+                                              ),
                                             ),
                                             Text(
-                                              currencyFormatter.format(_billingDetails!['total']),
-                                              style: const TextStyle(
-                                                color: Color(0xFF00C853),
-                                                fontWeight: FontWeight.w900,
-                                                fontSize: 20,
+                                              'Sesi: ${currentSession.id.substring(0, 8).toUpperCase()}',
+                                              style: GoogleFonts.tinos(
+                                                fontSize: 11,
+                                                color: Colors.grey[700],
                                               ),
                                             ),
                                           ],
                                         ),
+                                      ),
 
-                                        const SizedBox(height: 24),
-                                        Center(
-                                          child: Container(
-                                            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
-                                            decoration: BoxDecoration(
-                                              border: Border.all(color: const Color(0xFF00C853), width: 2),
-                                              borderRadius: BorderRadius.circular(8),
+                                      Container(
+                                        height: 2,
+                                        color: AppColors.frameInk,
+                                      ),
+
+                                      // Details section
+                                      Padding(
+                                        padding: const EdgeInsets.all(16.0),
+                                        child: Column(
+                                          crossAxisAlignment: CrossAxisAlignment.start,
+                                          children: [
+                                            _buildReceiptRow('Unit Bermain / Station Name', currentSession.unitName),
+                                            _buildSpecDivider(),
+                                            _buildReceiptRow('Nama Pelanggan / Cust. Name', currentSession.customerName),
+                                            _buildSpecDivider(),
+                                            _buildReceiptRow('Waktu Mulai / Start Time', DateFormat('HH:mm').format(currentSession.startTime)),
+                                            _buildSpecDivider(),
+                                            _buildReceiptRow('Waktu Selesai / End Time', DateFormat('HH:mm').format(DateTime.now())),
+                                            _buildSpecDivider(),
+                                            _buildReceiptRow('Durasi Bermain / Play Duration', '${_billingDetails!['durationMinutes']} Menit'),
+                                            
+                                            const SizedBox(height: 16),
+                                            Container(
+                                              height: 1,
+                                              color: AppColors.frameInk,
                                             ),
-                                            child: const Text(
-                                              'LUNAS / CASH',
-                                              style: TextStyle(
-                                                color: Color(0xFF00C853),
-                                                fontWeight: FontWeight.w900,
-                                                fontSize: 16,
-                                                letterSpacing: 2.0,
+                                            const SizedBox(height: 16),
+
+                                            _buildReceiptRow(
+                                              'Tarif Unit (${currencyFormatter.format(_billingDetails!['hourlyRate'])}/jam)',
+                                              currencyFormatter.format(_billingDetails!['baseSubtotal']),
+                                            ),
+                                            
+                                            if (currentSession.memberId != null) ...[
+                                              _buildSpecDivider(),
+                                              Padding(
+                                                padding: const EdgeInsets.symmetric(vertical: 4.0),
+                                                child: Row(
+                                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                                  children: [
+                                                    Text(
+                                                      'Diskon Member (${(_billingDetails!['discountPercentage'] * 100).toInt()}%)',
+                                                      style: GoogleFonts.tinos(
+                                                        color: AppColors.tintOlive,
+                                                        fontWeight: FontWeight.bold,
+                                                        fontSize: 13,
+                                                      ),
+                                                    ),
+                                                    Text(
+                                                      '- ${currencyFormatter.format(_billingDetails!['discount'])}',
+                                                      style: GoogleFonts.tinos(
+                                                        color: AppColors.tintOlive,
+                                                        fontWeight: FontWeight.bold,
+                                                        fontSize: 13,
+                                                      ),
+                                                    ),
+                                                  ],
+                                                ),
+                                              ),
+                                            ],
+
+                                            if (currentSession.extras.isNotEmpty) ...[
+                                              _buildSpecDivider(),
+                                              const SizedBox(height: 6),
+                                              Text(
+                                                'Makanan & Minuman / Extras:',
+                                                style: GoogleFonts.tinos(
+                                                  color: AppColors.ink,
+                                                  fontSize: 12,
+                                                  fontWeight: FontWeight.bold,
+                                                ),
+                                              ),
+                                              ...currentSession.extras.map(
+                                                (extra) => Padding(
+                                                  padding: const EdgeInsets.only(left: 12.0, top: 4.0, bottom: 4.0),
+                                                  child: Row(
+                                                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                                    children: [
+                                                      Text(
+                                                        extra.name,
+                                                        style: GoogleFonts.tinos(
+                                                          fontSize: 12,
+                                                          fontStyle: FontStyle.italic,
+                                                          color: Colors.grey[700],
+                                                        ),
+                                                      ),
+                                                      Text(
+                                                        currencyFormatter.format(extra.price),
+                                                        style: GoogleFonts.tinos(
+                                                          fontSize: 12,
+                                                          color: AppColors.ink,
+                                                        ),
+                                                      ),
+                                                    ],
+                                                  ),
+                                                ),
+                                              ),
+                                            ],
+
+                                            const SizedBox(height: 16),
+                                            Container(
+                                              height: 1.5,
+                                              color: AppColors.frameInk,
+                                            ),
+                                            const SizedBox(height: 16),
+
+                                            Row(
+                                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                              children: [
+                                                Text(
+                                                  'TOTAL BAYAR / TOTAL DUE',
+                                                  style: GoogleFonts.arimo(
+                                                    color: AppColors.ink,
+                                                    fontWeight: FontWeight.w900,
+                                                    fontSize: 14,
+                                                  ),
+                                                ),
+                                                Text(
+                                                  currencyFormatter.format(_billingDetails!['total']),
+                                                  style: GoogleFonts.arimo(
+                                                    color: AppColors.primary, // Dell Red
+                                                    fontWeight: FontWeight.w900,
+                                                    fontSize: 20,
+                                                  ),
+                                                ),
+                                              ],
+                                            ),
+
+                                            const SizedBox(height: 24),
+                                            Center(
+                                              child: Container(
+                                                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+                                                decoration: BoxDecoration(
+                                                  border: Border.all(color: AppColors.tintOlive, width: 2.0),
+                                                ),
+                                                child: Text(
+                                                  'LUNAS / CASH ONLY',
+                                                  style: GoogleFonts.arimo(
+                                                    color: AppColors.tintOlive,
+                                                    fontWeight: FontWeight.w900,
+                                                    fontSize: 14,
+                                                    letterSpacing: 2.0,
+                                                  ),
+                                                ),
                                               ),
                                             ),
-                                          ),
+                                          ],
                                         ),
-                                      ],
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                const SizedBox(height: 24),
+
+                                // Confirm Button
+                                GestureDetector(
+                                  onTap: _isSaving ? null : () => _confirmPayment(currentSession),
+                                  child: Container(
+                                    width: double.infinity,
+                                    padding: const EdgeInsets.symmetric(vertical: 14),
+                                    decoration: BoxDecoration(
+                                      color: AppColors.frameInk,
+                                      border: Border.all(color: AppColors.frameInk),
+                                    ),
+                                    child: Center(
+                                      child: _isSaving
+                                          ? const SizedBox(
+                                              height: 18,
+                                              width: 18,
+                                              child: CircularProgressIndicator(
+                                                color: AppColors.canvas,
+                                                strokeWidth: 2.0,
+                                              ),
+                                            )
+                                          : Text(
+                                              'KONFIRMASI BAYAR & SELESAI',
+                                              style: GoogleFonts.arimo(
+                                                color: AppColors.canvas,
+                                                fontWeight: FontWeight.w900,
+                                                fontSize: 14,
+                                                letterSpacing: 1.0,
+                                              ),
+                                            ),
                                     ),
                                   ),
-                                ],
-                              ),
-                            ),
-                            const SizedBox(height: 32),
-
-                            // Confirm Button
-                            SizedBox(
-                              width: double.infinity,
-                              height: 52,
-                              child: ElevatedButton(
-                                onPressed: _isSaving ? null : () => _confirmPayment(currentSession),
-                                style: ElevatedButton.styleFrom(
-                                  backgroundColor: const Color(0xFF00C853),
-                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                                 ),
-                                child: _isSaving
-                                    ? const CircularProgressIndicator(color: Colors.white)
-                                    : const Text(
-                                        'KONFIRMASI BAYAR & SELESAI',
-                                        style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15, color: Colors.white),
-                                      ),
-                              ),
+                                const SizedBox(height: 16),
+                              ],
                             ),
-                          ],
+                          ),
                         ),
                       ),
                     );
                   },
-                  loading: () => const Center(child: CircularProgressIndicator()),
-                  error: (e, __) => Center(child: Text('Error: $e', style: const TextStyle(color: Colors.redAccent))),
+                  loading: () => const Center(
+                    child: CircularProgressIndicator(color: AppColors.frameInk),
+                  ),
+                  error: (e, __) => Center(
+                    child: Text(
+                      'Error: $e',
+                      style: GoogleFonts.tinos(color: AppColors.primary),
+                    ),
+                  ),
                 ),
     );
   }
 
-  Widget _buildReceiptRow(String label, String value, {bool isDiscount = false, bool isExtra = false}) {
+  Widget _buildReceiptRow(String label, String value) {
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 4.0),
+      padding: const EdgeInsets.symmetric(vertical: 6.0),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           Text(
             label,
-            style: TextStyle(
-              color: isExtra ? Colors.white38 : Colors.white54,
-              fontSize: isExtra ? 11 : 12,
-              fontStyle: isExtra ? FontStyle.italic : FontStyle.normal,
+            style: GoogleFonts.tinos(
+              fontWeight: FontWeight.bold,
+              fontSize: 13,
+              color: AppColors.ink,
             ),
           ),
           Text(
             value,
-            style: TextStyle(
-              color: isDiscount ? const Color(0xFF00C853) : isExtra ? Colors.white70 : Colors.white70,
-              fontWeight: isDiscount || !isExtra ? FontWeight.bold : FontWeight.normal,
-              fontSize: isExtra ? 11 : 12,
+            style: GoogleFonts.tinos(
+              fontSize: 13,
+              color: AppColors.ink,
             ),
           ),
         ],
@@ -289,27 +468,10 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
     );
   }
 
-  Widget _buildDashedLine() {
-    return LayoutBuilder(
-      builder: (BuildContext context, BoxConstraints constraints) {
-        final boxWidth = constraints.constrainWidth();
-        const dashWidth = 5.0;
-        const dashHeight = 1.0;
-        final dashCount = (boxWidth / (2 * dashWidth)).floor();
-        return Flex(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          direction: Axis.horizontal,
-          children: List.generate(dashCount, (_) {
-            return const SizedBox(
-              width: dashWidth,
-              height: dashHeight,
-              child: DecoratedBox(
-                decoration: BoxDecoration(color: Colors.white24),
-              ),
-            );
-          }),
-        );
-      },
+  Widget _buildSpecDivider() {
+    return Container(
+      height: 1,
+      color: Colors.grey[300],
     );
   }
 
@@ -332,7 +494,12 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Pembayaran berhasil dicatat. Sesi selesai.')),
+          SnackBar(
+            content: Text(
+              'Pembayaran berhasil dicatat. Sesi selesai.',
+              style: GoogleFonts.tinos(),
+            ),
+          ),
         );
         context.go('/');
       }
@@ -342,7 +509,13 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
           _isSaving = false;
         });
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Gagal menyelesaikan pembayaran: $e')),
+          SnackBar(
+            content: Text(
+              'Gagal menyelesaikan pembayaran: $e',
+              style: GoogleFonts.tinos(),
+            ),
+            backgroundColor: AppColors.primary,
+          ),
         );
       }
     }

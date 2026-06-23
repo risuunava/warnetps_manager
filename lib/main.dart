@@ -5,6 +5,7 @@ import 'firebase_options.dart';
 import 'services/router.dart';
 import 'services/unit_service.dart';
 import 'services/tariff_service.dart';
+import 'theme/app_theme.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -46,20 +47,7 @@ class MyApp extends ConsumerWidget {
     return MaterialApp.router(
       title: 'WarnetPS Manager',
       debugShowCheckedModeBanner: false,
-      theme: ThemeData.dark().copyWith(
-        scaffoldBackgroundColor: const Color(0xFF0A0A0F),
-        colorScheme: const ColorScheme.dark(
-          primary: Color(0xFF0088FF),
-          secondary: Color(0xFF00D4FF),
-          surface: Color(0xFF12121A),
-        ),
-        textTheme: ThemeData.dark().textTheme.apply(
-              fontFamily: 'Inter',
-            ),
-        primaryTextTheme: ThemeData.dark().textTheme.apply(
-              fontFamily: 'Inter',
-            ),
-      ),
+      theme: AppTheme.darkTheme,
       routerConfig: router,
     );
   }

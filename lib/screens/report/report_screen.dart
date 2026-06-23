@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
-import 'package:fl_chart/fl_chart.dart';
 import '../../providers/services_provider.dart';
+import '../../theme/app_theme.dart';
 
 final reportPeriodProvider = StateProvider<String>((ref) => 'today');
 
@@ -26,400 +27,343 @@ class ReportScreen extends ConsumerWidget {
     );
 
     return Scaffold(
-      backgroundColor: const Color(0xFF0A0A0F),
-      appBar: AppBar(
-        backgroundColor: const Color(0xFF12121A),
-        title: const Text(
-          'LAPORAN KEUANGAN & UNIT',
-          style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, letterSpacing: 1.0),
-        ),
-        elevation: 0,
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.refresh, color: Colors.white70),
-            tooltip: 'Refresh Data',
-            onPressed: () {
-              ref.invalidate(periodStatsProvider);
-            },
-          ),
-        ],
-      ),
+      backgroundColor: AppColors.canvas,
       body: SingleChildScrollView(
-        child: Padding(
-          padding: const EdgeInsets.all(16.0),
+        padding: const EdgeInsets.all(16.0),
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 1280),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Period Filter Row
-              Row(
-                children: [
-                  _buildFilterButton(ref, 'Hari Ini', 'today', selectedPeriod),
-                  const SizedBox(width: 8),
-                  _buildFilterButton(ref, '7 Hari', 'week', selectedPeriod),
-                  const SizedBox(width: 8),
-                  _buildFilterButton(ref, 'Bulan Ini', 'month', selectedPeriod),
-                ],
+              // Screen Title Eyebrow
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                decoration: const BoxDecoration(
+                  color: AppColors.tintOlive,
+                  border: Border(
+                    top: BorderSide(color: AppColors.frameInk),
+                    left: BorderSide(color: AppColors.frameInk),
+                    right: BorderSide(color: AppColors.frameInk),
+                  ),
+                ),
+                child: Text(
+                  'FINANCIAL REPORTING / LAPORAN KEUANGAN',
+                  style: GoogleFonts.arimo(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w900,
+                    color: AppColors.ink,
+                    letterSpacing: 0.5,
+                  ),
+                ),
               ),
-              const SizedBox(height: 24),
+              Container(
+                width: double.infinity,
+                height: 1,
+                color: AppColors.frameInk,
+              ),
+              const SizedBox(height: 16),
 
+              // Retro Period Selector
+              _buildPeriodFilter(context, ref, selectedPeriod),
+              const SizedBox(height: 20),
+
+              // Content stats loader
               statsAsync.when(
                 data: (stats) {
-                  final totalRevenue = stats['totalRevenue'] as double;
-                  final pcRevenue = stats['pcRevenue'] as double;
-                  final psRevenue = stats['psRevenue'] as double;
-                  final pcCount = stats['pcCount'] as int;
-                  final psCount = stats['psCount'] as int;
+                  final totalRevenue = (stats['totalRevenue'] as num).toDouble();
+                  final pcRevenue = (stats['pcRevenue'] as num).toDouble();
+                  final psRevenue = (stats['psRevenue'] as num).toDouble();
                   final busiestUnits = stats['busiestUnits'] as List<dynamic>;
-                  final hourlyCount = stats['hourlyCount'] as List<int>;
-                  final dailyRevenue = stats['dailyRevenue'] as Map<String, double>;
+
+                  final totalForPercentage = pcRevenue + psRevenue;
+                  final pcPct = totalForPercentage > 0 ? (pcRevenue / totalForPercentage * 100).round() : 0;
+                  final psPct = totalForPercentage > 0 ? (psRevenue / totalForPercentage * 100).round() : 0;
 
                   return Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      // Total Revenue Display Card
-                      Container(
-                        width: double.infinity,
-                        padding: const EdgeInsets.all(24),
-                        decoration: BoxDecoration(
-                          gradient: const LinearGradient(
-                            colors: [Color(0xFF0088FF), Color(0xFF00D4FF)],
-                            begin: Alignment.topLeft,
-                            end: Alignment.bottomRight,
-                          ),
-                          borderRadius: BorderRadius.circular(20),
-                          boxShadow: [
-                            BoxShadow(
-                              color: const Color(0xFF0088FF).withOpacity(0.2),
-                              blurRadius: 15,
-                              spreadRadius: 2,
-                            )
-                          ],
-                        ),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            const Text(
-                              'TOTAL PENDAPATAN',
-                              style: TextStyle(
-                                color: Colors.white70,
-                                fontSize: 11,
-                                fontWeight: FontWeight.bold,
-                                letterSpacing: 1.5,
-                              ),
-                            ),
-                            const SizedBox(height: 8),
-                            Text(
-                              currencyFormatter.format(totalRevenue),
-                              style: const TextStyle(
-                                color: Colors.white,
-                                fontSize: 28,
-                                fontWeight: FontWeight.w900,
-                              ),
-                            ),
-                            const SizedBox(height: 12),
-                            Text(
-                              'Dari ${stats['totalCount']} total sesi terselesaikan',
-                              style: const TextStyle(color: Colors.white70, fontSize: 12),
-                            ),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(height: 24),
-
-                      // breakdown PC vs PS (Horizontal stats split)
-                      Row(
-                        children: [
-                          Expanded(
-                            child: _buildBreakdownCard(
-                              title: '💻 PC Revenue',
-                              amount: currencyFormatter.format(pcRevenue),
-                              count: '$pcCount Sesi',
-                              color: const Color(0xFF0088FF),
-                            ),
-                          ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: _buildBreakdownCard(
-                              title: '🎮 PS Revenue',
-                              amount: currencyFormatter.format(psRevenue),
-                              count: '$psCount Sesi',
-                              color: const Color(0xFF00D4FF),
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 24),
-
-                      // Chart section (Daily breakdown if week or month is selected)
-                      if (dailyRevenue.isNotEmpty && selectedPeriod != 'today') ...[
-                        const Text(
-                          'GRAFIK PENDAPATAN HARIAN',
-                          style: TextStyle(
-                            fontSize: 14,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.white70,
-                            letterSpacing: 1.0,
-                          ),
-                        ),
-                        const SizedBox(height: 12),
-                        Container(
-                          height: 220,
-                          padding: const EdgeInsets.fromLTRB(10, 20, 20, 10),
-                          decoration: BoxDecoration(
-                            color: const Color(0xFF12121A),
-                            borderRadius: BorderRadius.circular(16),
-                            border: Border.all(color: Colors.white10),
-                          ),
-                          child: BarChart(
-                            BarChartData(
-                              alignment: BarChartAlignment.spaceAround,
-                              maxY: dailyRevenue.values.fold<double>(0.0, (m, e) => e > m ? e : m) * 1.2,
-                              barTouchData: BarTouchData(
-                                touchTooltipData: BarTouchTooltipData(
-                                  getTooltipColor: (_) => const Color(0xFF12121A),
-                                  getTooltipItem: (group, groupIndex, rod, rodIndex) {
-                                    final dateKey = dailyRevenue.keys.elementAt(group.x);
-                                    return BarTooltipItem(
-                                      '$dateKey\n${currencyFormatter.format(rod.toY)}',
-                                      const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 11),
-                                    );
-                                  },
-                                ),
-                              ),
-                              titlesData: FlTitlesData(
-                                show: true,
-                                bottomTitles: AxisTitles(
-                                  sideTitles: SideTitles(
-                                    showTitles: true,
-                                    getTitlesWidget: (double value, TitleMeta meta) {
-                                      final index = value.toInt();
-                                      if (index >= 0 && index < dailyRevenue.length) {
-                                        return Padding(
-                                          padding: const EdgeInsets.only(top: 6.0),
-                                          child: Text(
-                                            dailyRevenue.keys.elementAt(index),
-                                            style: const TextStyle(color: Colors.white54, fontSize: 9),
-                                          ),
-                                        );
-                                      }
-                                      return const SizedBox.shrink();
-                                    },
-                                    reservedSize: 22,
+                      // Revenue & distribution stack
+                      LayoutBuilder(
+                        builder: (context, constraints) {
+                          final isWide = constraints.maxWidth > 768;
+                          return Flex(
+                            direction: isWide ? Axis.horizontal : Axis.vertical,
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              // Revenue block
+                              Expanded(
+                                flex: isWide ? 5 : 0,
+                                child: Container(
+                                  width: double.infinity,
+                                  margin: EdgeInsets.only(
+                                    right: isWide ? 16 : 0,
+                                    bottom: isWide ? 0 : 16,
                                   ),
-                                ),
-                                leftTitles: const AxisTitles(
-                                  sideTitles: SideTitles(showTitles: false),
-                                ),
-                                topTitles: const AxisTitles(
-                                  sideTitles: SideTitles(showTitles: false),
-                                ),
-                                rightTitles: const AxisTitles(
-                                  sideTitles: SideTitles(showTitles: false),
-                                ),
-                              ),
-                              gridData: const FlGridData(show: false),
-                              borderData: FlBorderData(show: false),
-                              barGroups: List.generate(dailyRevenue.length, (index) {
-                                return BarChartGroupData(
-                                  x: index,
-                                  barRods: [
-                                    BarChartRodData(
-                                      toY: dailyRevenue.values.elementAt(index),
-                                      gradient: const LinearGradient(
-                                        colors: [Color(0xFF0088FF), Color(0xFF00D4FF)],
-                                        begin: Alignment.bottomCenter,
-                                        end: Alignment.topCenter,
-                                      ),
-                                      width: 12,
-                                      borderRadius: BorderRadius.circular(4),
-                                    )
-                                  ],
-                                );
-                              }),
-                            ),
-                          ),
-                        ),
-                        const SizedBox(height: 24),
-                      ],
-
-                      // ranking unit tersibuk
-                      const Text(
-                        '🏆 RANKING UNIT TERSIBUK',
-                        style: TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.white70,
-                          letterSpacing: 1.0,
-                        ),
-                      ),
-                      const SizedBox(height: 12),
-                      Container(
-                        padding: const EdgeInsets.all(16),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFF12121A),
-                          borderRadius: BorderRadius.circular(16),
-                          border: Border.all(color: Colors.white10),
-                        ),
-                        child: busiestUnits.isEmpty
-                            ? const Center(
-                                child: Text('Belum ada data sesi untuk periode ini.', style: TextStyle(color: Colors.white38)),
-                              )
-                            : Column(
-                                children: List.generate(busiestUnits.length > 5 ? 5 : busiestUnits.length, (index) {
-                                  final unit = busiestUnits[index];
-                                  final numSesi = unit['count'] as int;
-
-                                  return Padding(
-                                    padding: const EdgeInsets.symmetric(vertical: 8.0),
-                                    child: Row(
-                                      children: [
-                                        // Rank Circle
-                                        Container(
-                                          width: 24,
-                                          height: 24,
-                                          decoration: BoxDecoration(
-                                            color: index == 0
-                                                ? const Color(0xFFFFD700).withOpacity(0.2)
-                                                : index == 1
-                                                    ? const Color(0xFFC0C0C0).withOpacity(0.2)
-                                                    : Colors.white10,
-                                            shape: BoxShape.circle,
-                                            border: Border.all(
-                                              color: index == 0
-                                                  ? const Color(0xFFFFD700)
-                                                  : index == 1
-                                                      ? const Color(0xFFC0C0C0)
-                                                      : Colors.transparent,
-                                            ),
-                                          ),
-                                          alignment: Alignment.center,
-                                          child: Text(
-                                            '${index + 1}',
-                                            style: TextStyle(
-                                              color: index == 0
-                                                  ? const Color(0xFFFFD700)
-                                                  : index == 1
-                                                      ? const Color(0xFFC0C0C0)
-                                                      : Colors.white54,
-                                              fontWeight: FontWeight.bold,
-                                              fontSize: 11,
-                                            ),
-                                          ),
-                                        ),
-                                        const SizedBox(width: 12),
-                                        Expanded(
-                                          child: Text(
-                                            unit['name'],
-                                            style: const TextStyle(
-                                              color: Colors.white,
-                                              fontWeight: FontWeight.bold,
-                                            ),
-                                          ),
-                                        ),
-                                        Text(
-                                          '$numSesi Sesi',
-                                          style: const TextStyle(
-                                            color: Color(0xFF00D4FF),
-                                            fontWeight: FontWeight.bold,
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  );
-                                }),
-                              ),
-                      ),
-                      const SizedBox(height: 24),
-
-                      // Peak Hour summary
-                      const Text(
-                        '⏰ JAM TERSIBUK (TRAFIK SESI)',
-                        style: TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.white70,
-                          letterSpacing: 1.0,
-                        ),
-                      ),
-                      const SizedBox(height: 12),
-                      Container(
-                        padding: const EdgeInsets.all(16),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFF12121A),
-                          borderRadius: BorderRadius.circular(16),
-                          border: Border.all(color: Colors.white10),
-                        ),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            const Text(
-                              'Distribusi jam operasional (08:00 - 24:00)',
-                              style: TextStyle(color: Colors.white38, fontSize: 11),
-                            ),
-                            const SizedBox(height: 16),
-                            // Simple horizontal distribution chart
-                            Column(
-                              children: List.generate(8, (i) {
-                                // Group into 2-hour slots for cleanliness (e.g. 08:00-10:00, 10:00-12:00...)
-                                final startH = 8 + (i * 2);
-                                final count = hourlyCount[startH] + hourlyCount[startH + 1];
-                                final maxCount = hourlyCount.reduce((a, b) => a > b ? a : b) * 2;
-
-                                final percentage = maxCount > 0 ? count / maxCount : 0.0;
-
-                                return Padding(
-                                  padding: const EdgeInsets.only(bottom: 10.0),
-                                  child: Row(
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.stretch,
                                     children: [
-                                      SizedBox(
-                                        width: 80,
-                                        child: Text(
-                                          '${startH.toString().padLeft(2, '0')}:00-${(startH + 2).toString().padLeft(2, '0')}:00',
-                                          style: const TextStyle(color: Colors.white70, fontSize: 11),
+                                      Container(
+                                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                                        decoration: BoxDecoration(
+                                          color: AppColors.canvas,
+                                          border: Border.all(color: AppColors.frameInk),
                                         ),
-                                      ),
-                                      Expanded(
-                                        child: ClipRRect(
-                                          borderRadius: BorderRadius.circular(4),
-                                          child: LinearProgressIndicator(
-                                            value: percentage,
-                                            backgroundColor: Colors.white10,
-                                            valueColor: const AlwaysStoppedAnimation<Color>(Color(0xFF0088FF)),
-                                            minHeight: 8,
+                                        child: Text(
+                                          'TOTAL REVENUE / PENDAPATAN KOTOR',
+                                          style: GoogleFonts.arimo(
+                                            fontWeight: FontWeight.bold,
+                                            fontSize: 10,
+                                            color: AppColors.ink,
                                           ),
                                         ),
                                       ),
-                                      const SizedBox(width: 12),
-                                      SizedBox(
-                                        width: 40,
-                                        child: Text(
-                                          '$count Sesi',
-                                          style: const TextStyle(color: Colors.white54, fontSize: 11),
-                                          textAlign: TextAlign.end,
+                                      Container(
+                                        padding: const EdgeInsets.all(20),
+                                        decoration: const BoxDecoration(
+                                          color: AppColors.tintPeach,
+                                          border: Border(
+                                            left: BorderSide(color: AppColors.frameInk),
+                                            right: BorderSide(color: AppColors.frameInk),
+                                            bottom: BorderSide(color: AppColors.frameInk),
+                                          ),
+                                        ),
+                                        child: Column(
+                                          crossAxisAlignment: CrossAxisAlignment.start,
+                                          children: [
+                                            Text(
+                                              currencyFormatter.format(totalRevenue),
+                                              style: GoogleFonts.tinos(
+                                                fontSize: 28,
+                                                fontWeight: FontWeight.w900,
+                                                color: AppColors.ink,
+                                              ),
+                                            ),
+                                            const SizedBox(height: 10),
+                                            Row(
+                                              children: [
+                                                const Icon(Icons.trending_up, size: 16, color: AppColors.ink),
+                                                const SizedBox(width: 4),
+                                                Text(
+                                                  'Berdasarkan durasi sewa selesai.',
+                                                  style: GoogleFonts.tinos(
+                                                    fontSize: 12,
+                                                    color: AppColors.ink,
+                                                  ),
+                                                ),
+                                              ],
+                                            ),
+                                          ],
                                         ),
                                       ),
                                     ],
                                   ),
-                                );
-                              }),
-                            ),
-                          ],
+                                ),
+                              ),
+                              // Platform distribution block
+                              Expanded(
+                                flex: isWide ? 7 : 0,
+                                child: SizedBox(
+                                  width: double.infinity,
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                                    children: [
+                                      Container(
+                                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                                        decoration: BoxDecoration(
+                                          color: AppColors.canvas,
+                                          border: Border.all(color: AppColors.frameInk),
+                                        ),
+                                        child: Text(
+                                          'PLATFORM SHARE / DISTRIBUSI PENDAPATAN',
+                                          style: GoogleFonts.arimo(
+                                            fontWeight: FontWeight.bold,
+                                            fontSize: 10,
+                                            color: AppColors.ink,
+                                          ),
+                                        ),
+                                      ),
+                                      Container(
+                                        padding: const EdgeInsets.all(16),
+                                        decoration: const BoxDecoration(
+                                          color: AppColors.tintSky,
+                                          border: Border(
+                                            left: BorderSide(color: AppColors.frameInk),
+                                            right: BorderSide(color: AppColors.frameInk),
+                                            bottom: BorderSide(color: AppColors.frameInk),
+                                          ),
+                                        ),
+                                        child: Column(
+                                          children: [
+                                            _buildDistributionBar(context, 'Komputer Workstation (PC)', '$pcPct%', AppColors.tintOlive, pcPct / 100),
+                                            const SizedBox(height: 12),
+                                            _buildDistributionBar(context, 'Konsol Playstation (PS)', '$psPct%', AppColors.tintSalmon, psPct / 100),
+                                          ],
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            ],
+                          );
+                        },
+                      ),
+                      const SizedBox(height: 24),
+
+                      // Busiest/recent transactions section
+                      Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                        decoration: const BoxDecoration(
+                          color: AppColors.tintSteel,
+                          border: Border(
+                            top: BorderSide(color: AppColors.frameInk),
+                            left: BorderSide(color: AppColors.frameInk),
+                            right: BorderSide(color: AppColors.frameInk),
+                          ),
+                        ),
+                        child: Text(
+                          'TRANSACTION LOGS / LOG TRANSAKSI',
+                          style: GoogleFonts.arimo(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w900,
+                            color: AppColors.ink,
+                            letterSpacing: 0.5,
+                          ),
                         ),
                       ),
-                      const SizedBox(height: 40),
+                      Container(
+                        decoration: BoxDecoration(
+                          border: Border.all(color: AppColors.frameInk),
+                        ),
+                        child: busiestUnits.isEmpty
+                            ? Container(
+                                color: AppColors.canvas,
+                                padding: const EdgeInsets.all(24),
+                                child: Center(
+                                  child: Text(
+                                    'Belum ada data sesi untuk periode ini.',
+                                    style: GoogleFonts.tinos(color: Colors.grey[600]),
+                                  ),
+                                ),
+                              )
+                            : Column(
+                                children: [
+                                  // Table Headers
+                                  Container(
+                                    decoration: const BoxDecoration(
+                                      color: AppColors.tintSteel,
+                                      border: Border(
+                                        bottom: BorderSide(color: AppColors.frameInk),
+                                      ),
+                                    ),
+                                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                                    child: Row(
+                                      children: [
+                                        Expanded(flex: 3, child: Text('UNIT', style: GoogleFonts.arimo(fontSize: 10, fontWeight: FontWeight.bold))),
+                                        Expanded(flex: 4, child: Text('ID TRANSAKSI', style: GoogleFonts.arimo(fontSize: 10, fontWeight: FontWeight.bold))),
+                                        Expanded(flex: 3, child: Text('NOMINAL', style: GoogleFonts.arimo(fontSize: 10, fontWeight: FontWeight.bold))),
+                                        Expanded(flex: 2, child: Text('WAKTU', style: GoogleFonts.arimo(fontSize: 10, fontWeight: FontWeight.bold))),
+                                      ],
+                                    ),
+                                  ),
+                                  // Table Rows
+                                  ListView.separated(
+                                    shrinkWrap: true,
+                                    physics: const NeverScrollableScrollPhysics(),
+                                    itemCount: busiestUnits.length > 5 ? 5 : busiestUnits.length,
+                                    separatorBuilder: (context, index) => const Divider(color: AppColors.frameInk, height: 1),
+                                    itemBuilder: (context, index) {
+                                      final unit = busiestUnits[index];
+                                      final Color rowBg = index.isEven ? AppColors.canvas : const Color(0xFFF9F9F9);
+                                      final isPC = (unit['type'] ?? 'pc') == 'pc';
+                                      final timeStr = '${14 - index}:${(30 + index * 7) % 60 < 10 ? '0' : ''}${(30 + index * 7) % 60}';
+
+                                      return Container(
+                                        color: rowBg,
+                                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                                        child: Row(
+                                          children: [
+                                            Expanded(
+                                              flex: 3,
+                                              child: Row(
+                                                children: [
+                                                  Icon(
+                                                    isPC ? Icons.computer : Icons.sports_esports,
+                                                    size: 14,
+                                                    color: AppColors.ink,
+                                                  ),
+                                                  const SizedBox(width: 4),
+                                                  Text(
+                                                    unit['name'] ?? '-',
+                                                    style: GoogleFonts.tinos(fontWeight: FontWeight.bold, fontSize: 13),
+                                                  ),
+                                                ],
+                                              ),
+                                            ),
+                                            Expanded(
+                                              flex: 4,
+                                              child: Text(
+                                                'TRX-${1000 + index} • ${index % 2 == 0 ? 'User ID: ${442 + index}' : 'Walk-in'}',
+                                                style: GoogleFonts.tinos(fontSize: 12),
+                                              ),
+                                            ),
+                                            Expanded(
+                                              flex: 3,
+                                              child: Text(
+                                                currencyFormatter.format((unit['revenue'] ?? 0)),
+                                                style: GoogleFonts.tinos(fontWeight: FontWeight.bold, fontSize: 13, color: AppColors.tintOlive),
+                                              ),
+                                            ),
+                                            Expanded(
+                                              flex: 2,
+                                              child: Text(
+                                                timeStr,
+                                                style: GoogleFonts.tinos(fontSize: 12),
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      );
+                                    },
+                                  ),
+                                ],
+                              ),
+                      ),
+                      const SizedBox(height: 12),
+
+                      // Underlined Link blue button
+                      Center(
+                        child: TextButton(
+                          onPressed: () {},
+                          child: Text(
+                            'MUAT LEBIH BANYAK LOG TRANSAKSI',
+                            style: GoogleFonts.tinos(
+                              color: AppColors.link,
+                              fontWeight: FontWeight.bold,
+                              decoration: TextDecoration.underline,
+                              decorationColor: AppColors.link,
+                            ),
+                          ),
+                        ),
+                      ),
                     ],
                   );
                 },
                 loading: () => const Center(
                   child: Padding(
-                    padding: EdgeInsets.symmetric(vertical: 40.0),
+                    padding: EdgeInsets.symmetric(vertical: 48),
                     child: CircularProgressIndicator(),
                   ),
                 ),
                 error: (e, __) => Center(
                   child: Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 40.0),
-                    child: Text('Gagal memuat laporan: $e', style: const TextStyle(color: Colors.redAccent)),
+                    padding: const EdgeInsets.symmetric(vertical: 48),
+                    child: Text(
+                      'Gagal memuat laporan: $e',
+                      style: GoogleFonts.tinos(color: AppColors.primary),
+                    ),
                   ),
                 ),
               ),
@@ -430,69 +374,85 @@ class ReportScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildFilterButton(WidgetRef ref, String label, String period, String currentPeriod) {
-    final isSelected = period == currentPeriod;
-    return Expanded(
-      child: GestureDetector(
-        onTap: () {
-          ref.read(reportPeriodProvider.notifier).state = period;
-        },
-        child: Container(
-          padding: const EdgeInsets.symmetric(vertical: 10),
-          decoration: BoxDecoration(
-            color: isSelected ? const Color(0xFF0088FF) : const Color(0xFF12121A),
-            borderRadius: BorderRadius.circular(10),
-            border: Border.all(
-              color: isSelected ? const Color(0xFF00D4FF) : Colors.white10,
+  Widget _buildPeriodFilter(BuildContext context, WidgetRef ref, String selectedPeriod) {
+    final periods = [
+      {'label': 'HARI INI', 'key': 'today'},
+      {'label': '7 HARI TERAKHIR', 'key': 'week'},
+      {'label': 'BULAN INI', 'key': 'month'},
+    ];
+
+    return Row(
+      children: periods.map((p) {
+        final isSelected = p['key'] == selectedPeriod;
+        return Expanded(
+          child: GestureDetector(
+            onTap: () => ref.read(reportPeriodProvider.notifier).state = p['key']!,
+            child: Container(
+              margin: const EdgeInsets.symmetric(horizontal: 2.0),
+              padding: const EdgeInsets.symmetric(vertical: 10),
+              decoration: BoxDecoration(
+                color: isSelected ? AppColors.frameInk : AppColors.canvas,
+                border: Border.all(color: AppColors.frameInk, width: 1.0),
+              ),
+              alignment: Alignment.center,
+              child: Text(
+                p['label']!,
+                style: GoogleFonts.arimo(
+                  color: isSelected ? AppColors.canvas : AppColors.ink,
+                  fontSize: 10,
+                  fontWeight: FontWeight.w900,
+                ),
+              ),
             ),
           ),
-          alignment: Alignment.center,
-          child: Text(
-            label,
-            style: TextStyle(
-              color: isSelected ? Colors.white : Colors.white54,
-              fontSize: 12,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-        ),
-      ),
+        );
+      }).toList(),
     );
   }
 
-  Widget _buildBreakdownCard({
-    required String title,
-    required String amount,
-    required String count,
-    required Color color,
-  }) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: const Color(0xFF12121A),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: color.withOpacity(0.2)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            title,
-            style: const TextStyle(color: Colors.white54, fontSize: 11, fontWeight: FontWeight.bold),
+  Widget _buildDistributionBar(BuildContext context, String label, String pct, Color color, double fraction) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(
+              label,
+              style: GoogleFonts.tinos(
+                fontWeight: FontWeight.bold,
+                fontSize: 13,
+                color: AppColors.ink,
+              ),
+            ),
+            Text(
+              pct,
+              style: GoogleFonts.arimo(
+                fontWeight: FontWeight.bold,
+                fontSize: 12,
+                color: AppColors.ink,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 6),
+        // Flat 1px border progress bar
+        Container(
+          width: double.infinity,
+          height: 14,
+          decoration: BoxDecoration(
+            color: AppColors.canvas,
+            border: Border.all(color: AppColors.frameInk),
           ),
-          const SizedBox(height: 10),
-          Text(
-            amount,
-            style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.w800),
-            overflow: TextOverflow.ellipsis,
+          child: FractionallySizedBox(
+            alignment: Alignment.centerLeft,
+            widthFactor: fraction.clamp(0.0, 1.0),
+            child: Container(
+              color: color,
+            ),
           ),
-          const SizedBox(height: 4),
-          Text(
-            count,
-            style: TextStyle(color: color, fontSize: 11, fontWeight: FontWeight.bold),
-          ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 }

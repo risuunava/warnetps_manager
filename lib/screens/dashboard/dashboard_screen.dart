@@ -1,11 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 import '../../models/unit_model.dart';
 import '../../models/session_model.dart';
 import '../../providers/services_provider.dart';
 import '../../providers/auth_provider.dart';
+import '../../theme/app_theme.dart';
+import '../../widgets/shared/unit_card.dart';
 import '../../widgets/elapsed_time_text.dart';
 
 class DashboardScreen extends ConsumerWidget {
@@ -17,7 +20,6 @@ class DashboardScreen extends ConsumerWidget {
     final psUnitsAsync = ref.watch(psUnitsStreamProvider);
     final activeSessionsAsync = ref.watch(activeSessionsStreamProvider);
     final todaySessionsAsync = ref.watch(todayCompletedSessionsProvider);
-    final userProfileAsync = ref.watch(userProfileProvider);
 
     final currencyFormatter = NumberFormat.currency(
       locale: 'id_ID',
@@ -26,201 +28,345 @@ class DashboardScreen extends ConsumerWidget {
     );
 
     return Scaffold(
-      backgroundColor: const Color(0xFF0A0A0F),
-      body: SafeArea(
-        child: RefreshIndicator(
-          onRefresh: () async {
-            ref.invalidate(pcUnitsStreamProvider);
-            ref.invalidate(psUnitsStreamProvider);
-            ref.invalidate(activeSessionsStreamProvider);
-            ref.invalidate(todayCompletedSessionsProvider);
-          },
-          child: SingleChildScrollView(
-            physics: const AlwaysScrollableScrollPhysics(),
-            child: Padding(
-              padding: const EdgeInsets.all(16.0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // Greeting & Profile Summary
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          userProfileAsync.when(
-                            data: (profile) => Text(
-                              'Halo, ${profile?.name ?? "Operator"}!',
-                              style: const TextStyle(
-                                fontSize: 20,
-                                fontWeight: FontWeight.bold,
-                                color: Colors.white,
-                              ),
-                            ),
-                            loading: () => const Text('Halo...', style: TextStyle(fontSize: 20, color: Colors.white)),
-                            error: (_, __) => const Text('Halo!', style: TextStyle(fontSize: 20, color: Colors.white)),
-                          ),
-                          const Text(
-                            'Selamat bekerja. Pantau unit secara real-time.',
-                            style: TextStyle(fontSize: 12, color: Colors.white54),
-                          ),
-                        ],
-                      ),
-                      // Role Badge
-                      userProfileAsync.when(
-                        data: (profile) => Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                          decoration: BoxDecoration(
-                            color: profile?.role == 'owner'
-                                ? const Color(0xFF0088FF).withOpacity(0.2)
-                                : Colors.white10,
-                            borderRadius: BorderRadius.circular(20),
-                            border: Border.all(
-                              color: profile?.role == 'owner'
-                                  ? const Color(0xFF0088FF)
-                                  : Colors.white30,
-                              width: 1,
-                            ),
-                          ),
-                          child: Text(
-                            (profile?.role ?? 'operator').toUpperCase(),
-                            style: TextStyle(
-                              fontSize: 10,
-                              fontWeight: FontWeight.bold,
-                              color: profile?.role == 'owner'
-                                  ? const Color(0xFF00D4FF)
-                                  : Colors.white,
-                            ),
-                          ),
-                        ),
-                        loading: () => const SizedBox.shrink(),
-                        error: (_, __) => const SizedBox.shrink(),
-                      ),
-                    ],
+      backgroundColor: AppColors.canvas,
+      body: RefreshIndicator(
+        onRefresh: () async {
+          ref.invalidate(pcUnitsStreamProvider);
+          ref.invalidate(psUnitsStreamProvider);
+          ref.invalidate(activeSessionsStreamProvider);
+          ref.invalidate(todayCompletedSessionsProvider);
+        },
+        child: SingleChildScrollView(
+          physics: const AlwaysScrollableScrollPhysics(),
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 1280),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Top Eyebrow: Branch Name
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                  decoration: BoxDecoration(
+                    color: AppColors.tintSteel,
+                    border: Border.all(color: AppColors.frameInk, width: 1.0),
                   ),
-                  const SizedBox(height: 24),
+                  child: Text(
+                    'JAKARTA OFFICE BRANCH',
+                    style: GoogleFonts.arimo(
+                      fontSize: 20,
+                      fontWeight: FontWeight.w900,
+                      color: AppColors.ink,
+                      letterSpacing: 1.0,
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 16),
 
-                  // Summary Statistics Widgets
-                  Row(
-                    children: [
-                      // Active Units Card
-                      Expanded(
-                        child: Container(
-                          padding: const EdgeInsets.all(16),
-                          decoration: BoxDecoration(
-                            color: const Color(0xFF12121A),
-                            borderRadius: BorderRadius.circular(16),
-                            border: Border.all(color: Colors.white10),
-                          ),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              const Row(
-                                children: [
-                                  Icon(Icons.play_circle_outline, color: Color(0xFF00D4FF), size: 20),
-                                  SizedBox(width: 8),
-                                  Text(
-                                    'Unit Aktif',
-                                    style: TextStyle(fontSize: 12, color: Colors.white70),
+                // Stats Overview cards
+                LayoutBuilder(
+                  builder: (context, constraints) {
+                    final isDesktop = constraints.maxWidth > 768;
+                    return Flex(
+                      direction: isDesktop ? Axis.horizontal : Axis.vertical,
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        // Card 1: Unit Aktif
+                        Expanded(
+                          flex: isDesktop ? 1 : 0,
+                          child: Container(
+                            width: double.infinity,
+                            margin: EdgeInsets.only(
+                              bottom: isDesktop ? 0 : 16,
+                              right: isDesktop ? 16 : 0,
+                            ),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.stretch,
+                              children: [
+                                // Header bar
+                                Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                                  decoration: BoxDecoration(
+                                    color: AppColors.canvas,
+                                    border: Border.all(color: AppColors.frameInk),
                                   ),
-                                ],
-                              ),
-                              const SizedBox(height: 12),
-                              activeSessionsAsync.when(
-                                data: (sessions) => Text(
-                                  '${sessions.length} / 10',
-                                  style: const TextStyle(
-                                    fontSize: 22,
-                                    fontWeight: FontWeight.w900,
-                                    color: Colors.white,
+                                  child: Row(
+                                    children: [
+                                      const Icon(Icons.computer, size: 14, color: AppColors.ink),
+                                      const SizedBox(width: 6),
+                                      Text(
+                                        'SYSTEM STATUS / UNIT AKTIF',
+                                        style: GoogleFonts.arimo(
+                                          fontWeight: FontWeight.bold,
+                                          fontSize: 11,
+                                          color: AppColors.ink,
+                                        ),
+                                      ),
+                                    ],
                                   ),
                                 ),
-                                loading: () => const SizedBox(
-                                  height: 20,
-                                  width: 20,
-                                  child: CircularProgressIndicator(strokeWidth: 2),
-                                ),
-                                error: (_, __) => const Text('Error', style: TextStyle(color: Colors.redAccent)),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      // Today's Income Card
-                      Expanded(
-                        child: Container(
-                          padding: const EdgeInsets.all(16),
-                          decoration: BoxDecoration(
-                            color: const Color(0xFF12121A),
-                            borderRadius: BorderRadius.circular(16),
-                            border: Border.all(color: Colors.white10),
-                          ),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              const Row(
-                                children: [
-                                  Icon(Icons.account_balance_wallet_outlined, color: Color(0xFF00C853), size: 20),
-                                  SizedBox(width: 8),
-                                  Text(
-                                    'Pendapatan Hari Ini',
-                                    style: TextStyle(fontSize: 12, color: Colors.white70),
-                                  ),
-                                ],
-                              ),
-                              const SizedBox(height: 12),
-                              todaySessionsAsync.when(
-                                data: (sessions) {
-                                  final total = sessions.fold<double>(0, (sum, s) => sum + (s.total));
-                                  return Text(
-                                    currencyFormatter.format(total),
-                                    style: const TextStyle(
-                                      fontSize: 18,
-                                      fontWeight: FontWeight.w900,
-                                      color: Colors.white,
+                                // Tinted Body
+                                Container(
+                                  padding: const EdgeInsets.all(16),
+                                  decoration: const BoxDecoration(
+                                    color: AppColors.tintSage,
+                                    border: Border(
+                                      left: BorderSide(color: AppColors.frameInk),
+                                      right: BorderSide(color: AppColors.frameInk),
+                                      bottom: BorderSide(color: AppColors.frameInk),
                                     ),
-                                    overflow: TextOverflow.ellipsis,
-                                  );
-                                },
-                                loading: () => const SizedBox(
-                                  height: 20,
-                                  width: 20,
-                                  child: CircularProgressIndicator(strokeWidth: 2),
+                                  ),
+                                  child: activeSessionsAsync.when(
+                                    data: (sessions) {
+                                      final totalUnits = (pcUnitsAsync.value?.length ?? 0) +
+                                          (psUnitsAsync.value?.length ?? 0);
+                                      final ratio = totalUnits > 0 ? sessions.length / totalUnits : 0.0;
+                                      return Column(
+                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        children: [
+                                          Row(
+                                            crossAxisAlignment: CrossAxisAlignment.baseline,
+                                            textBaseline: TextBaseline.alphabetic,
+                                            children: [
+                                              Text(
+                                                '${sessions.length}',
+                                                style: GoogleFonts.arimo(
+                                                  fontSize: 28,
+                                                  fontWeight: FontWeight.w900,
+                                                  color: AppColors.ink,
+                                                ),
+                                              ),
+                                              Text(
+                                                ' UNIT AKTIF / $totalUnits TOTAL',
+                                                style: GoogleFonts.tinos(
+                                                  fontSize: 14,
+                                                  fontWeight: FontWeight.bold,
+                                                  color: AppColors.ink,
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                          const SizedBox(height: 10),
+                                          // Retro flat progress bar
+                                          Container(
+                                            height: 16,
+                                            decoration: BoxDecoration(
+                                              color: AppColors.canvas,
+                                              border: Border.all(color: AppColors.frameInk),
+                                            ),
+                                            child: FractionallySizedBox(
+                                              alignment: Alignment.centerLeft,
+                                              widthFactor: ratio.clamp(0.0, 1.0),
+                                              child: Container(
+                                                color: AppColors.tintOlive,
+                                              ),
+                                            ),
+                                          ),
+                                        ],
+                                      );
+                                    },
+                                    loading: () => const Center(
+                                      child: SizedBox(
+                                        height: 24,
+                                        width: 24,
+                                        child: CircularProgressIndicator(strokeWidth: 2),
+                                      ),
+                                    ),
+                                    error: (_, __) => Text(
+                                      'Error loading data',
+                                      style: GoogleFonts.tinos(color: AppColors.primary),
+                                    ),
+                                  ),
                                 ),
-                                error: (_, __) => const Text('Error', style: TextStyle(color: Colors.redAccent)),
-                              ),
-                            ],
+                              ],
+                            ),
                           ),
                         ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 24),
+                        // Card 2: Pendapatan
+                        Expanded(
+                          flex: isDesktop ? 1 : 0,
+                          child: SizedBox(
+                            width: double.infinity,
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.stretch,
+                              children: [
+                                // Header bar
+                                Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                                  decoration: BoxDecoration(
+                                    color: AppColors.canvas,
+                                    border: Border.all(color: AppColors.frameInk),
+                                  ),
+                                  child: Row(
+                                    children: [
+                                      const Icon(Icons.payments, size: 14, color: AppColors.ink),
+                                      const SizedBox(width: 6),
+                                      Text(
+                                        'TODAY\'S REVENUE / PENDAPATAN',
+                                        style: GoogleFonts.arimo(
+                                          fontWeight: FontWeight.bold,
+                                          fontSize: 11,
+                                          color: AppColors.ink,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                // Tinted Body
+                                Container(
+                                  padding: const EdgeInsets.all(16),
+                                  decoration: const BoxDecoration(
+                                    color: AppColors.tintSky,
+                                    border: Border(
+                                      left: BorderSide(color: AppColors.frameInk),
+                                      right: BorderSide(color: AppColors.frameInk),
+                                      bottom: BorderSide(color: AppColors.frameInk),
+                                    ),
+                                  ),
+                                  child: todaySessionsAsync.when(
+                                    data: (sessions) {
+                                      final total = sessions.fold<double>(0, (sum, s) => sum + (s.total));
+                                      return Column(
+                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        children: [
+                                          Text(
+                                            currencyFormatter.format(total),
+                                            style: GoogleFonts.tinos(
+                                              fontSize: 28,
+                                              fontWeight: FontWeight.w900,
+                                              color: AppColors.ink,
+                                            ),
+                                          ),
+                                          const SizedBox(height: 10),
+                                          Row(
+                                            children: [
+                                              const Icon(Icons.arrow_upward, size: 14, color: AppColors.primary),
+                                              const SizedBox(width: 4),
+                                              Text(
+                                                '+12% vs Kemarin (Estimasi)',
+                                                style: GoogleFonts.tinos(
+                                                  fontSize: 12,
+                                                  fontWeight: FontWeight.bold,
+                                                  color: AppColors.ink,
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                        ],
+                                      );
+                                    },
+                                    loading: () => const Center(
+                                      child: SizedBox(
+                                        height: 24,
+                                        width: 24,
+                                        child: CircularProgressIndicator(strokeWidth: 2),
+                                      ),
+                                    ),
+                                    error: (_, __) => Text(
+                                      'Error loading data',
+                                      style: GoogleFonts.tinos(color: AppColors.primary),
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ],
+                    );
+                  },
+                ),
+                const SizedBox(height: 32),
 
-                  // PC GRID SECTION
-                  _buildSectionHeader(context, '💻 KOMPUTER (PC)'),
-                  const SizedBox(height: 10),
-                  pcUnitsAsync.when(
-                    data: (units) => _buildGrid(context, units, activeSessionsAsync.value ?? []),
-                    loading: () => const Center(child: Padding(padding: EdgeInsets.all(20.0), child: CircularProgressIndicator())),
-                    error: (e, __) => Text('Error loading PCs: $e', style: const TextStyle(color: Colors.redAccent)),
+                // Komputer (PC) Section Title (Arial Black Eyebrow style)
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                  decoration: const BoxDecoration(
+                    color: AppColors.tintOlive,
+                    border: Border(
+                      top: BorderSide(color: AppColors.frameInk),
+                      left: BorderSide(color: AppColors.frameInk),
+                      right: BorderSide(color: AppColors.frameInk),
+                    ),
                   ),
-
-                  const SizedBox(height: 28),
-
-                  // PS GRID SECTION
-                  _buildSectionHeader(context, '🎮 PLAYSTATION (PS)'),
-                  const SizedBox(height: 10),
-                  psUnitsAsync.when(
-                    data: (units) => _buildGrid(context, units, activeSessionsAsync.value ?? []),
-                    loading: () => const Center(child: Padding(padding: EdgeInsets.all(20.0), child: CircularProgressIndicator())),
-                    error: (e, __) => Text('Error loading PS: $e', style: const TextStyle(color: Colors.redAccent)),
+                  child: Text(
+                    'KOMPUTER WORKSTATION (PC)',
+                    style: GoogleFonts.arimo(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w900,
+                      color: AppColors.ink,
+                      letterSpacing: 0.5,
+                    ),
                   ),
-                  const SizedBox(height: 40),
-                ],
-              ),
+                ),
+                Container(
+                  width: double.infinity,
+                  height: 1,
+                  color: AppColors.frameInk,
+                ),
+                const SizedBox(height: 16),
+                
+                pcUnitsAsync.when(
+                  data: (units) => _buildGrid(context, ref, units, activeSessionsAsync.value ?? []),
+                  loading: () => const Center(
+                    child: Padding(
+                      padding: EdgeInsets.all(20.0),
+                      child: CircularProgressIndicator(),
+                    ),
+                  ),
+                  error: (e, __) => Text(
+                    'Error loading PCs: $e',
+                    style: GoogleFonts.tinos(color: AppColors.primary),
+                  ),
+                ),
+
+                const SizedBox(height: 32),
+
+                // Konsol (PS) Section Title
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                  decoration: const BoxDecoration(
+                    color: AppColors.tintSalmon,
+                    border: Border(
+                      top: BorderSide(color: AppColors.frameInk),
+                      left: BorderSide(color: AppColors.frameInk),
+                      right: BorderSide(color: AppColors.frameInk),
+                    ),
+                  ),
+                  child: Text(
+                    'KONSOL GAME (PLAYSTATION)',
+                    style: GoogleFonts.arimo(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w900,
+                      color: AppColors.ink,
+                      letterSpacing: 0.5,
+                    ),
+                  ),
+                ),
+                Container(
+                  width: double.infinity,
+                  height: 1,
+                  color: AppColors.frameInk,
+                ),
+                const SizedBox(height: 16),
+
+                psUnitsAsync.when(
+                  data: (units) => _buildGrid(context, ref, units, activeSessionsAsync.value ?? []),
+                  loading: () => const Center(
+                    child: Padding(
+                      padding: EdgeInsets.all(20.0),
+                      child: CircularProgressIndicator(),
+                    ),
+                  ),
+                  error: (e, __) => Text(
+                    'Error loading PS: $e',
+                    style: GoogleFonts.tinos(color: AppColors.primary),
+                  ),
+                ),
+              ],
             ),
           ),
         ),
@@ -228,252 +374,144 @@ class DashboardScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildSectionHeader(BuildContext context, String title) {
-    return Text(
-      title,
-      style: const TextStyle(
-        fontSize: 14,
-        fontWeight: FontWeight.w800,
-        letterSpacing: 1.5,
-        color: Colors.white70,
-      ),
-    );
-  }
-
-  Widget _buildGrid(BuildContext context, List<UnitModel> units, List<SessionModel> activeSessions) {
+  Widget _buildGrid(BuildContext context, WidgetRef ref, List<UnitModel> units, List<SessionModel> activeSessions) {
     if (units.isEmpty) {
-      return const Padding(
-        padding: EdgeInsets.symmetric(vertical: 20),
-        child: Text('Tidak ada unit terdaftar.', style: TextStyle(color: Colors.white38)),
+      return Padding(
+        padding: const EdgeInsets.symmetric(vertical: 20),
+        child: Text(
+          'Tidak ada unit terdaftar.',
+          style: GoogleFonts.tinos(color: AppColors.ink),
+        ),
       );
     }
 
-    return GridView.builder(
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
-      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: 2,
-        crossAxisSpacing: 12,
-        mainAxisSpacing: 12,
-        childAspectRatio: 1.15,
-      ),
-      itemCount: units.length,
-      itemBuilder: (context, index) {
-        final unit = units[index];
-        // Find matching active session if status is in_use
-        SessionModel? activeSession;
-        if (unit.status == 'in_use' && unit.currentSessionId != null) {
-          activeSession = activeSessions.firstWhere(
-            (s) => s.id == unit.currentSessionId,
-            orElse: () => SessionModel(
-              id: unit.currentSessionId!,
-              unitId: unit.id,
-              unitName: unit.name,
-              startTime: DateTime.now(),
-              customerName: 'Loading...',
-              subtotal: 0,
-              discount: 0,
-              total: 0,
-              extras: [],
-              paymentMethod: 'cash',
-              operatorId: '',
-              status: 'active',
-            ),
-          );
-        }
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        int crossAxisCount = 2; // sm
+        if (constraints.maxWidth > 640) crossAxisCount = 3;
+        if (constraints.maxWidth > 768) crossAxisCount = 4;
+        if (constraints.maxWidth > 1024) crossAxisCount = 6;
 
-        return _UnitCard(unit: unit, activeSession: activeSession);
+        return GridView.builder(
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+            crossAxisCount: crossAxisCount,
+            crossAxisSpacing: 12,
+            mainAxisSpacing: 12,
+            mainAxisExtent: 96,
+          ),
+          itemCount: units.length,
+          itemBuilder: (context, index) {
+            final unit = units[index];
+
+            SessionModel? activeSession;
+            if (unit.status == 'in_use' && unit.currentSessionId != null) {
+              activeSession = activeSessions.firstWhere(
+                (s) => s.id == unit.currentSessionId,
+                orElse: () => SessionModel(
+                  id: unit.currentSessionId!,
+                  unitId: unit.id,
+                  unitName: unit.name,
+                  startTime: DateTime.now(),
+                  customerName: 'Loading...',
+                  subtotal: 0,
+                  discount: 0,
+                  total: 0,
+                  extras: [],
+                  paymentMethod: 'cash',
+                  operatorId: '',
+                  status: 'active',
+                ),
+              );
+            }
+
+            final userProfile = ref.watch(userProfileProvider).value;
+
+            return _UnitCardWrapper(
+              unit: unit,
+              activeSession: activeSession,
+              userProfile: userProfile,
+            );
+          },
+        );
       },
     );
   }
 }
 
-class _UnitCard extends ConsumerWidget {
+class _UnitCardWrapper extends ConsumerStatefulWidget {
   final UnitModel unit;
   final SessionModel? activeSession;
+  final dynamic userProfile;
 
-  const _UnitCard({
+  const _UnitCardWrapper({
     required this.unit,
     this.activeSession,
+    this.userProfile,
   });
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final status = unit.status;
-    final isAvailable = status == 'available';
-    final isInUse = status == 'in_use';
-    final isMaintenance = status == 'maintenance';
+  ConsumerState<_UnitCardWrapper> createState() => _UnitCardWrapperState();
+}
 
-    final Color statusColor;
-    if (isAvailable) {
-      statusColor = const Color(0xFF00C853); // Green
-    } else if (isInUse) {
-      statusColor = const Color(0xFFFF1744); // Red
+class _UnitCardWrapperState extends ConsumerState<_UnitCardWrapper> {
+  @override
+  Widget build(BuildContext context) {
+    UnitState unitState;
+    if (widget.unit.status == 'available') {
+      unitState = UnitState.available;
+    } else if (widget.unit.status == 'in_use') {
+      unitState = UnitState.occupied;
     } else {
-      statusColor = const Color(0xFF616161); // Grey
+      unitState = UnitState.maintenance;
     }
 
-    // Role check to allow maintenance status changing on the fly
-    final userProfile = ref.watch(userProfileProvider).value;
+    Widget? timeWidget;
+    if (unitState == UnitState.occupied && widget.activeSession != null) {
+      timeWidget = ElapsedTimeText(
+        startTime: widget.activeSession!.startTime,
+        style: GoogleFonts.tinos(
+          fontSize: 11,
+          fontWeight: FontWeight.bold,
+          color: AppColors.ink,
+        ),
+      );
+    }
 
-    return GestureDetector(
+    return UnitCard(
+      title: widget.unit.name,
+      state: unitState,
+      timeText: '--:--:--',
+      timeWidget: timeWidget,
       onTap: () {
-        if (isAvailable) {
-          // Go to start session screen
-          context.push('/start-session/${unit.id}');
-        } else if (isInUse && activeSession != null) {
-          // Go to session detail screen
-          context.push('/session-detail/${activeSession!.id}');
-        } else if (isMaintenance) {
-          if (userProfile?.role == 'owner') {
+        if (unitState == UnitState.available) {
+          context.push('/start-session/${widget.unit.id}');
+        } else if (unitState == UnitState.occupied && widget.activeSession != null) {
+          context.push('/session-detail/${widget.activeSession!.id}');
+        } else if (unitState == UnitState.maintenance) {
+          if (widget.userProfile?.role == 'owner') {
             _showMaintenanceOptions(context, ref);
           } else {
             ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('Hanya Owner yang dapat mengubah status Maintenance')),
+              SnackBar(
+                content: Text(
+                  'Hanya Owner yang dapat mengubah status Maintenance',
+                  style: GoogleFonts.tinos(),
+                ),
+                backgroundColor: AppColors.primary,
+              ),
             );
           }
         }
       },
-      child: Container(
-        padding: const EdgeInsets.all(12),
-        decoration: BoxDecoration(
-          color: const Color(0xFF12121A),
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(
-            color: statusColor.withOpacity(0.4),
-            width: 1.5,
-          ),
-          boxShadow: [
-            BoxShadow(
-              color: statusColor.withOpacity(0.05),
-              blurRadius: 8,
-              spreadRadius: 1,
-            )
-          ],
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Top Row: Unit Name & Type Icon
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Expanded(
-                  child: Text(
-                    unit.name,
-                    style: const TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.white,
-                    ),
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ),
-                Icon(
-                  unit.type == 'pc' ? Icons.computer : Icons.sports_esports,
-                  color: statusColor,
-                  size: 20,
-                ),
-              ],
-            ),
-            const SizedBox(height: 2),
-            // PS Type indicator if any (PS4/PS3/PS2)
-            if (unit.psType != null)
-              Text(
-                unit.psType!.toUpperCase(),
-                style: TextStyle(
-                  color: statusColor,
-                  fontSize: 10,
-                  fontWeight: FontWeight.w600,
-                  letterSpacing: 0.5,
-                ),
-              ),
-
-            const Spacer(),
-
-            // Dynamic Content middle section
-            if (isInUse && activeSession != null) ...[
-              Text(
-                activeSession!.customerName,
-                style: const TextStyle(
-                  color: Colors.white70,
-                  fontSize: 12,
-                  fontWeight: FontWeight.w500,
-                ),
-                overflow: TextOverflow.ellipsis,
-              ),
-              const SizedBox(height: 2),
-              ElapsedTimeText(
-                startTime: activeSession!.startTime,
-                style: TextStyle(
-                  color: statusColor,
-                  fontSize: 14,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            ] else if (isMaintenance) ...[
-              const Text(
-                'Perbaikan / Rusak',
-                style: TextStyle(color: Colors.white38, fontSize: 11),
-              ),
-              const SizedBox(height: 14),
-            ] else ...[
-              const Text(
-                'Ready to play',
-                style: TextStyle(color: Colors.white38, fontSize: 11),
-              ),
-              const SizedBox(height: 14),
-            ],
-
-            const Spacer(),
-
-            // Bottom Row: Status Badge
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: statusColor.withOpacity(0.12),
-                    borderRadius: BorderRadius.circular(6),
-                  ),
-                  child: Text(
-                    isAvailable
-                        ? 'TERSEDIA'
-                        : isInUse
-                            ? 'DIPAKAI'
-                            : 'MAINTENANCE',
-                    style: TextStyle(
-                      color: statusColor,
-                      fontSize: 8.5,
-                      fontWeight: FontWeight.w900,
-                      letterSpacing: 0.5,
-                    ),
-                  ),
-                ),
-                if (isAvailable && userProfile?.role == 'owner')
-                  GestureDetector(
-                    onTap: () {
-                      _setMaintenanceStatus(ref, true);
-                    },
-                    child: const Icon(
-                      Icons.settings_outlined,
-                      color: Colors.white38,
-                      size: 16,
-                    ),
-                  ),
-              ],
-            ),
-          ],
-        ),
-      ),
     );
   }
 
   void _setMaintenanceStatus(WidgetRef ref, bool maintenance) async {
     final unitService = ref.read(unitServiceProvider);
     await unitService.updateUnitStatus(
-      unit.id,
+      widget.unit.id,
       maintenance ? 'maintenance' : 'available',
       null,
     );
@@ -482,37 +520,52 @@ class _UnitCard extends ConsumerWidget {
   void _showMaintenanceOptions(BuildContext context, WidgetRef ref) {
     showModalBottomSheet(
       context: context,
-      backgroundColor: const Color(0xFF12121A),
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      backgroundColor: AppColors.canvas,
+      shape: const Border(
+        top: BorderSide(color: AppColors.frameInk, width: 2.0),
       ),
       builder: (context) {
         return SafeArea(
           child: Padding(
-            padding: const EdgeInsets.all(20.0),
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
             child: Column(
               mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Kelola Status ${unit.name}',
-                  style: const TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.white,
+                  'STATUS MANAGEMENT / KONTROL UNIT',
+                  style: GoogleFonts.arimo(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w900,
+                    color: AppColors.ink,
                   ),
                 ),
-                const SizedBox(height: 20),
+                const SizedBox(height: 8),
+                Text(
+                  'Kelola Status Operasional ${widget.unit.name}:',
+                  style: GoogleFonts.tinos(
+                    fontSize: 14,
+                    color: AppColors.ink,
+                  ),
+                ),
+                const SizedBox(height: 16),
                 ListTile(
-                  leading: const Icon(Icons.check_circle_outline, color: Color(0xFF00C853)),
-                  title: const Text('Ubah Ke Tersedia (Ready)', style: TextStyle(color: Colors.white)),
+                  leading: const Icon(Icons.check_circle_outline, color: AppColors.tintOlive),
+                  title: Text(
+                    'Ubah Ke Tersedia (Ready / Online)',
+                    style: GoogleFonts.tinos(fontWeight: FontWeight.bold),
+                  ),
                   onTap: () {
                     _setMaintenanceStatus(ref, false);
                     Navigator.pop(context);
                   },
                 ),
                 ListTile(
-                  leading: const Icon(Icons.settings_outlined, color: Colors.white54),
-                  title: const Text('Tetap Maintenance', style: TextStyle(color: Colors.white70)),
+                  leading: const Icon(Icons.close, color: AppColors.primary),
+                  title: Text(
+                    'Tetap Maintenance (Offline)',
+                    style: GoogleFonts.tinos(fontWeight: FontWeight.bold),
+                  ),
                   onTap: () {
                     Navigator.pop(context);
                   },

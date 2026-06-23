@@ -3,9 +3,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
+import 'package:google_fonts/google_fonts.dart';
 import '../../models/session_model.dart';
 import '../../providers/services_provider.dart';
+import '../../theme/app_theme.dart';
 import '../../widgets/elapsed_time_text.dart';
+import '../../widgets/shared/retro_scaffold.dart';
+import '../../widgets/shared/retro_bevel_container.dart';
 
 class SessionDetailScreen extends ConsumerStatefulWidget {
   final String sessionId;
@@ -66,270 +70,440 @@ class _SessionDetailScreenState extends ConsumerState<SessionDetailScreen> {
       decimalDigits: 0,
     );
 
-    return Scaffold(
-      backgroundColor: const Color(0xFF0A0A0F),
-      appBar: AppBar(
-        backgroundColor: const Color(0xFF12121A),
-        title: const Text('DETAIL SESI AKTIF', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-        elevation: 0,
-      ),
-      body: activeSessionsStream.when(
+    return RetroScaffold(
+      showBackButton: true,
+      onBackTap: () => context.go('/'),
+      child: activeSessionsStream.when(
         data: (sessions) {
           // Find the active session matching the ID
-          final session = sessions.firstWhere((s) => s.id == widget.sessionId, orElse: () => null as dynamic);
+          final session = sessions.firstWhere(
+            (s) => s.id == widget.sessionId,
+            orElse: () => null as dynamic,
+          );
+          
           if (session == null) {
             return Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  const Icon(Icons.check_circle_outline, color: Color(0xFF00C853), size: 48),
-                  const SizedBox(height: 16),
-                  const Text('Sesi ini telah diselesaikan.', style: TextStyle(color: Colors.white70, fontSize: 16)),
-                  const SizedBox(height: 16),
-                  ElevatedButton(
-                    onPressed: () => context.go('/'),
-                    child: const Text('Kembali ke Dashboard'),
-                  ),
-                ],
+              child: Container(
+                width: 320,
+                padding: const EdgeInsets.all(20),
+                decoration: BoxDecoration(
+                  color: AppColors.canvas,
+                  border: Border.all(color: AppColors.frameInk, width: 2.0),
+                ),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Icon(Icons.check_circle_outline, color: AppColors.tintOlive, size: 48),
+                    const SizedBox(height: 16),
+                    Text(
+                      'SESSION COMPLETED / SESI SELESAI',
+                      style: GoogleFonts.arimo(
+                        fontWeight: FontWeight.w900,
+                        fontSize: 12,
+                        color: AppColors.ink,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      'Sesi ini telah diselesaikan atau tidak aktif.',
+                      style: GoogleFonts.tinos(
+                        fontSize: 14,
+                        color: AppColors.ink,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: 20),
+                    GestureDetector(
+                      onTap: () => context.go('/'),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 16),
+                        decoration: BoxDecoration(
+                          color: AppColors.frameInk,
+                          border: Border.all(color: AppColors.frameInk),
+                        ),
+                        child: Text(
+                          'KEMBALI KE DASHBOARD',
+                          style: GoogleFonts.arimo(
+                            color: AppColors.canvas,
+                            fontWeight: FontWeight.w900,
+                            fontSize: 12,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
               ),
             );
           }
 
           return SingleChildScrollView(
+            physics: const AlwaysScrollableScrollPhysics(),
             child: Padding(
-              padding: const EdgeInsets.all(20.0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // Unit & Player Card
-                  Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.all(20),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFF12121A),
-                      borderRadius: BorderRadius.circular(16),
-                      border: Border.all(color: Colors.white10),
-                    ),
-                    child: Column(
-                      children: [
-                        Text(
-                          session.unitName.toUpperCase(),
-                          style: const TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.w900,
-                            color: Color(0xFF00D4FF),
-                            letterSpacing: 1.0,
+              padding: const EdgeInsets.all(16.0),
+              child: Center(
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 760),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // Unit & Player Card Title
+                      Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                        decoration: const BoxDecoration(
+                          color: AppColors.tintPeach, // Peach ribbon background
+                          border: Border(
+                            top: BorderSide(color: AppColors.frameInk),
+                            left: BorderSide(color: AppColors.frameInk),
+                            right: BorderSide(color: AppColors.frameInk),
                           ),
                         ),
-                        const SizedBox(height: 12),
-                        const Divider(color: Colors.white10),
-                        const SizedBox(height: 12),
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            const Text('Nama Pelanggan', style: TextStyle(color: Colors.white54, fontSize: 13)),
-                            Text(
-                              session.customerName,
-                              style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 15),
-                            ),
-                          ],
+                        child: Text(
+                          'SYSTEM SPECIFICATION / DETAIL UNIT',
+                          style: GoogleFonts.arimo(
+                            fontWeight: FontWeight.w900,
+                            fontSize: 12,
+                            color: AppColors.ink,
+                          ),
                         ),
-                        const SizedBox(height: 8),
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            const Text('Mulai Bermain', style: TextStyle(color: Colors.white54, fontSize: 13)),
-                            Text(
-                              DateFormat('HH:mm  •  dd MMM yyyy').format(session.startTime),
-                              style: const TextStyle(color: Colors.white70, fontSize: 13),
-                            ),
-                          ],
+                      ),
+                      
+                      // Unit Details Container
+                      Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          color: AppColors.canvas,
+                          border: Border.all(color: AppColors.frameInk),
                         ),
-                        const SizedBox(height: 8),
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        child: Column(
                           children: [
-                            const Text('Durasi Sesi', style: TextStyle(color: Colors.white54, fontSize: 13)),
-                            ElapsedTimeText(
+                            // Unit Header Row
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Text(
+                                  session.unitName.toUpperCase(),
+                                  style: GoogleFonts.arimo(
+                                    fontSize: 20,
+                                    fontWeight: FontWeight.w900,
+                                    color: AppColors.ink,
+                                  ),
+                                ),
+                                // Badge Client Type
+                                Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                  decoration: BoxDecoration(
+                                    color: AppColors.tintSteel,
+                                    border: Border.all(color: AppColors.frameInk),
+                                  ),
+                                  child: Text(
+                                    'ACTIVE SESSION',
+                                    style: GoogleFonts.arimo(
+                                      fontWeight: FontWeight.w900,
+                                      fontSize: 10,
+                                      color: AppColors.ink,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 12),
+                            Container(height: 1, color: AppColors.frameInk),
+                            const SizedBox(height: 12),
+                            
+                            // Spec rows
+                            _buildSpecRow('Nama Pelanggan / Cust. Name', session.customerName),
+                            _buildSpecDivider(),
+                            _buildSpecRow('Mulai Bermain / Start Time', DateFormat('HH:mm  •  dd MMM yyyy').format(session.startTime)),
+                            _buildSpecDivider(),
+                            _buildSpecWidgetRow('Durasi Sesi / Active Duration', ElapsedTimeText(
                               startTime: session.startTime,
-                              style: const TextStyle(
-                                color: Color(0xFFFF1744),
+                              style: GoogleFonts.tinos(
+                                color: AppColors.primary, // Dell Red
                                 fontWeight: FontWeight.bold,
-                                fontSize: 15,
+                                fontSize: 14,
+                              ),
+                            )),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 24),
+
+                      // Billing Summary
+                      Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                        decoration: const BoxDecoration(
+                          color: AppColors.tintSky, // Sky tint background
+                          border: Border(
+                            top: BorderSide(color: AppColors.frameInk),
+                            left: BorderSide(color: AppColors.frameInk),
+                            right: BorderSide(color: AppColors.frameInk),
+                          ),
+                        ),
+                        child: Text(
+                          'PRICING & BILLING / ESTIMASI BIAYA BERJALAN',
+                          style: GoogleFonts.arimo(
+                            fontWeight: FontWeight.w900,
+                            fontSize: 12,
+                            color: AppColors.ink,
+                          ),
+                        ),
+                      ),
+                      
+                      // Billing Content
+                      Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          color: AppColors.canvas,
+                          border: Border.all(color: AppColors.frameInk),
+                        ),
+                        child: _isLoadingBilling
+                            ? const Center(
+                                child: Padding(
+                                  padding: EdgeInsets.all(16.0),
+                                  child: CircularProgressIndicator(color: AppColors.frameInk),
+                                ),
+                              )
+                            : _billingError != null
+                                ? Text('Error billing: $_billingError', style: GoogleFonts.tinos(color: AppColors.primary))
+                                : Column(
+                                    children: [
+                                      _buildSpecRow(
+                                        'Tarif Unit / Base Rate (${_billingDetails!['durationMinutes']} Menit)',
+                                        currencyFormatter.format(_billingDetails!['baseSubtotal']),
+                                      ),
+                                      if (session.memberId != null) ...[
+                                        _buildSpecDivider(),
+                                        Padding(
+                                          padding: const EdgeInsets.symmetric(vertical: 6.0),
+                                          child: Row(
+                                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                            children: [
+                                              Text(
+                                                'Diskon Member (${(_billingDetails!['discountPercentage'] * 100).toInt()}%)',
+                                                style: GoogleFonts.tinos(
+                                                  color: AppColors.tintOlive,
+                                                  fontWeight: FontWeight.bold,
+                                                  fontSize: 14,
+                                                ),
+                                              ),
+                                              Text(
+                                                '- ${currencyFormatter.format(_billingDetails!['discount'])}',
+                                                style: GoogleFonts.tinos(
+                                                  color: AppColors.tintOlive,
+                                                  fontWeight: FontWeight.bold,
+                                                  fontSize: 14,
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+                                      ],
+                                      if (_billingDetails!['extrasSubtotal'] > 0) ...[
+                                        _buildSpecDivider(),
+                                        _buildSpecRow(
+                                          'Item Tambahan (Makanan & Minuman)',
+                                          currencyFormatter.format(_billingDetails!['extrasSubtotal']),
+                                        ),
+                                      ],
+                                      const SizedBox(height: 12),
+                                      Container(height: 1.5, color: AppColors.frameInk),
+                                      const SizedBox(height: 12),
+                                      Row(
+                                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                        children: [
+                                          Text(
+                                            'Estimasi Total Biaya / Total Cost:',
+                                            style: GoogleFonts.tinos(
+                                              fontWeight: FontWeight.bold,
+                                              fontSize: 16,
+                                            ),
+                                          ),
+                                          Text(
+                                            currencyFormatter.format(_billingDetails!['total']),
+                                            style: GoogleFonts.arimo(
+                                              color: AppColors.primary,
+                                              fontWeight: FontWeight.w900,
+                                              fontSize: 20,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ],
+                                  ),
+                      ),
+                      const SizedBox(height: 24),
+
+                      // Extras / Snacks Section Title
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(
+                            'TAMBAHAN MAKANAN & MINUMAN',
+                            style: GoogleFonts.arimo(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w900,
+                              color: AppColors.ink,
+                            ),
+                          ),
+                          GestureDetector(
+                            onTap: () => _showAddExtraSheet(context),
+                            child: RetroBevelContainer(
+                              color: AppColors.yellowSticker,
+                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                              child: Text(
+                                '+ TAMBAH',
+                                style: GoogleFonts.arimo(
+                                  color: AppColors.ink,
+                                  fontWeight: FontWeight.w900,
+                                  fontSize: 11,
+                                ),
                               ),
                             ),
-                          ],
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 8),
+                      
+                      // Extras List/Table
+                      Container(
+                        width: double.infinity,
+                        decoration: BoxDecoration(
+                          color: AppColors.canvas,
+                          border: Border.all(color: AppColors.frameInk),
                         ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 24),
-
-                  // Billing summary (Running cost)
-                  const Text(
-                    'BIAYA BERJALAN SAAT INI',
-                    style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.white54, letterSpacing: 1.0),
-                  ),
-                  const SizedBox(height: 12),
-                  Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.all(16),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFF12121A),
-                      borderRadius: BorderRadius.circular(16),
-                      border: Border.all(color: Colors.white10),
-                    ),
-                    child: _isLoadingBilling
-                        ? const Center(child: CircularProgressIndicator())
-                        : _billingError != null
-                            ? Text('Error billing: $_billingError', style: const TextStyle(color: Colors.redAccent))
-                            : Column(
+                        child: session.extras.isEmpty
+                            ? Padding(
+                                padding: const EdgeInsets.all(24.0),
+                                child: Center(
+                                  child: Text(
+                                    'Belum ada makanan/minuman ditambahkan.',
+                                    style: GoogleFonts.tinos(
+                                      color: Colors.grey[600],
+                                      fontSize: 13,
+                                    ),
+                                  ),
+                                ),
+                              )
+                            : Table(
+                                columnWidths: const {
+                                  0: FlexColumnWidth(3),
+                                  1: FlexColumnWidth(1),
+                                },
+                                border: TableBorder.symmetric(
+                                  inside: BorderSide(color: Colors.grey[300]!, width: 1.0),
+                                ),
                                 children: [
-                                  Row(
-                                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                    children: [
-                                      Text(
-                                        'Tarif Unit (${_billingDetails!['durationMinutes']} Menit)',
-                                        style: const TextStyle(color: Colors.white70, fontSize: 13),
-                                      ),
-                                      Text(
-                                        currencyFormatter.format(_billingDetails!['baseSubtotal']),
-                                        style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
-                                      ),
-                                    ],
-                                  ),
-                                  if (session.memberId != null) ...[
-                                    const SizedBox(height: 8),
-                                    Row(
-                                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                      children: [
-                                        Text(
-                                          'Diskon Member (${(_billingDetails!['discountPercentage'] * 100).toInt()}%)',
-                                          style: const TextStyle(color: Color(0xFF00C853), fontSize: 13),
-                                        ),
-                                        Text(
-                                          '- ${currencyFormatter.format(_billingDetails!['discount'])}',
-                                          style: const TextStyle(color: Color(0xFF00C853), fontWeight: FontWeight.bold),
-                                        ),
-                                      ],
+                                  // Header Row
+                                  TableRow(
+                                    decoration: const BoxDecoration(
+                                      color: AppColors.tintSteel,
                                     ),
-                                  ],
-                                  if (_billingDetails!['extrasSubtotal'] > 0) ...[
-                                    const SizedBox(height: 8),
-                                    Row(
-                                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                      children: [
-                                        const Text('Item Tambahan (Snack)', style: TextStyle(color: Colors.white70, fontSize: 13)),
-                                        Text(
-                                          currencyFormatter.format(_billingDetails!['extrasSubtotal']),
-                                          style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
-                                        ),
-                                      ],
-                                    ),
-                                  ],
-                                  const SizedBox(height: 12),
-                                  const Divider(color: Colors.white10),
-                                  const SizedBox(height: 12),
-                                  Row(
-                                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                     children: [
-                                      const Text(
-                                        'Estimasi Total',
-                                        style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 15),
+                                      Padding(
+                                        padding: const EdgeInsets.all(8.0),
+                                        child: Text(
+                                          'NAMA ITEM / MENU',
+                                          style: GoogleFonts.arimo(
+                                            fontWeight: FontWeight.w900,
+                                            fontSize: 11,
+                                          ),
+                                        ),
                                       ),
-                                      Text(
-                                        currencyFormatter.format(_billingDetails!['total']),
-                                        style: const TextStyle(
-                                          color: Color(0xFF00C853),
-                                          fontWeight: FontWeight.w900,
-                                          fontSize: 18,
+                                      Padding(
+                                        padding: const EdgeInsets.all(8.0),
+                                        child: Text(
+                                          'HARGA',
+                                          style: GoogleFonts.arimo(
+                                            fontWeight: FontWeight.w900,
+                                            fontSize: 11,
+                                          ),
+                                          textAlign: TextAlign.right,
                                         ),
                                       ),
                                     ],
                                   ),
+                                  // Data Rows
+                                  ...session.extras.asMap().entries.map((entry) {
+                                    final idx = entry.key;
+                                    final extra = entry.value;
+                                    final rowColor = idx % 2 == 0 ? AppColors.canvas : const Color(0xFFF9F9F9);
+                                    return TableRow(
+                                      decoration: BoxDecoration(
+                                        color: rowColor,
+                                      ),
+                                      children: [
+                                        Padding(
+                                          padding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 10.0),
+                                          child: Text(
+                                            extra.name,
+                                            style: GoogleFonts.tinos(fontSize: 13),
+                                          ),
+                                        ),
+                                        Padding(
+                                          padding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 10.0),
+                                          child: Text(
+                                            currencyFormatter.format(extra.price),
+                                            style: GoogleFonts.tinos(
+                                              fontWeight: FontWeight.bold,
+                                              fontSize: 13,
+                                            ),
+                                            textAlign: TextAlign.right,
+                                          ),
+                                        ),
+                                      ],
+                                    );
+                                  }),
                                 ],
                               ),
-                  ),
-                  const SizedBox(height: 24),
+                      ),
+                      const SizedBox(height: 36),
 
-                  // Extras / Snacks section
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      const Text(
-                        'TAMBAHAN MAKANAN & MINUMAN',
-                        style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.white54, letterSpacing: 1.0),
-                      ),
-                      TextButton.icon(
-                        onPressed: () => _showAddExtraSheet(context),
-                        icon: const Icon(Icons.add, size: 16, color: Color(0xFF0088FF)),
-                        label: const Text('TAMBAH', style: TextStyle(color: Color(0xFF0088FF), fontSize: 12, fontWeight: FontWeight.bold)),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 8),
-                  Container(
-                    width: double.infinity,
-                    decoration: BoxDecoration(
-                      color: const Color(0xFF12121A),
-                      borderRadius: BorderRadius.circular(16),
-                      border: Border.all(color: Colors.white10),
-                    ),
-                    child: session.extras.isEmpty
-                        ? const Padding(
-                            padding: EdgeInsets.all(24.0),
-                            child: Center(
-                              child: Text(
-                                'Belum ada makanan/minuman ditambahkan.',
-                                style: TextStyle(color: Colors.white38, fontSize: 13),
+                      // Checkout Action Button
+                      GestureDetector(
+                        onTap: () {
+                          context.push('/checkout/${session.id}');
+                        },
+                        child: Container(
+                          width: double.infinity,
+                          padding: const EdgeInsets.symmetric(vertical: 14),
+                          decoration: BoxDecoration(
+                            color: AppColors.frameInk,
+                            border: Border.all(color: AppColors.frameInk, width: 1),
+                          ),
+                          child: Center(
+                            child: Text(
+                              'STOP SESI & KASIR',
+                              style: GoogleFonts.arimo(
+                                color: AppColors.canvas,
+                                fontWeight: FontWeight.w900,
+                                fontSize: 14,
+                                letterSpacing: 1.0,
                               ),
                             ),
-                          )
-                        : ListView.separated(
-                            shrinkWrap: true,
-                            physics: const NeverScrollableScrollPhysics(),
-                            itemCount: session.extras.length,
-                            separatorBuilder: (context, index) => const Divider(color: Colors.white10, height: 1),
-                            itemBuilder: (context, index) {
-                              final extra = session.extras[index];
-                              return ListTile(
-                                leading: const Icon(Icons.local_pizza_outlined, color: Color(0xFF00D4FF), size: 20),
-                                title: Text(extra.name, style: const TextStyle(color: Colors.white, fontSize: 14)),
-                                trailing: Text(
-                                  currencyFormatter.format(extra.price),
-                                  style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14),
-                                ),
-                              );
-                            },
                           ),
-                  ),
-                  const SizedBox(height: 48),
-
-                  // Checkout Action Button
-                  SizedBox(
-                    width: double.infinity,
-                    height: 50,
-                    child: ElevatedButton(
-                      onPressed: () {
-                        context.push('/checkout/${session.id}');
-                      },
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFFFF1744), // red stop accent
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                        ),
                       ),
-                      child: const Text(
-                        'STOP SESI & KASIR',
-                        style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15, color: Colors.white),
-                      ),
-                    ),
+                      const SizedBox(height: 24),
+                    ],
                   ),
-                ],
+                ),
               ),
             ),
           );
         },
-        loading: () => const Center(child: CircularProgressIndicator()),
-        error: (e, __) => Center(child: Text('Error loading session: $e', style: const TextStyle(color: Colors.redAccent))),
+        loading: () => const Center(child: CircularProgressIndicator(color: AppColors.frameInk)),
+        error: (e, __) => Center(
+          child: Text(
+            'Error loading session: $e',
+            style: GoogleFonts.tinos(color: AppColors.primary, fontSize: 14),
+          ),
+        ),
       ),
     );
   }
@@ -351,9 +525,9 @@ class _SessionDetailScreenState extends ConsumerState<SessionDetailScreen> {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
-      backgroundColor: const Color(0xFF12121A),
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      backgroundColor: AppColors.canvas,
+      shape: const Border(
+        top: BorderSide(color: AppColors.frameInk, width: 2.0),
       ),
       builder: (context) {
         return Padding(
@@ -372,30 +546,47 @@ class _SessionDetailScreenState extends ConsumerState<SessionDetailScreen> {
                   child: Container(
                     width: 40,
                     height: 4,
-                    decoration: BoxDecoration(color: Colors.white24, borderRadius: BorderRadius.circular(2)),
+                    color: Colors.grey[300],
                   ),
                 ),
                 const SizedBox(height: 16),
-                const Text(
+                Text(
                   'TAMBAH MINUMAN / MAKANAN',
-                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white),
+                  style: GoogleFonts.arimo(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w900,
+                    color: AppColors.ink,
+                  ),
                 ),
                 const SizedBox(height: 16),
 
                 // Presets Title
-                const Text('Menu Terlaris', style: TextStyle(color: Colors.white54, fontSize: 12, fontWeight: FontWeight.bold)),
+                Text(
+                  'Menu Terlaris / Best Sellers:',
+                  style: GoogleFonts.tinos(
+                    color: Colors.grey[700],
+                    fontSize: 13,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
                 const SizedBox(height: 8),
 
-                // Preset Grid
+                // Preset Chips using ActionChip with flat border
                 Wrap(
                   spacing: 8,
                   runSpacing: 8,
                   children: presetExtras.map((item) {
                     return ActionChip(
-                      backgroundColor: const Color(0xFF0A0A0F),
-                      side: const BorderSide(color: Colors.white10),
-                      label: Text('${item['name']} (Rp ${(item['price'] as num).toInt()})'),
-                      labelStyle: const TextStyle(color: Colors.white70, fontSize: 11),
+                      backgroundColor: AppColors.canvas,
+                      side: const BorderSide(color: AppColors.frameInk),
+                      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
+                      label: Text(
+                        '${item['name']} (Rp ${(item['price'] as num).toInt()})',
+                        style: GoogleFonts.tinos(
+                          color: AppColors.ink,
+                          fontSize: 12,
+                        ),
+                      ),
                       onPressed: () {
                         _addExtraItem(item['name'] as String, item['price'] as double);
                         Navigator.pop(context);
@@ -405,11 +596,18 @@ class _SessionDetailScreenState extends ConsumerState<SessionDetailScreen> {
                 ),
 
                 const SizedBox(height: 20),
-                const Divider(color: Colors.white10),
+                Container(height: 1, color: Colors.grey[300]),
                 const SizedBox(height: 16),
 
                 // Custom Input Form
-                const Text('Item Kustom', style: TextStyle(color: Colors.white54, fontSize: 12, fontWeight: FontWeight.bold)),
+                Text(
+                  'Item Kustom / Custom Item:',
+                  style: GoogleFonts.tinos(
+                    color: Colors.grey[700],
+                    fontSize: 13,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
                 const SizedBox(height: 8),
                 Form(
                   key: formKey,
@@ -417,11 +615,10 @@ class _SessionDetailScreenState extends ConsumerState<SessionDetailScreen> {
                     children: [
                       TextFormField(
                         controller: nameController,
-                        style: const TextStyle(color: Colors.white),
-                        decoration: InputDecoration(
-                          labelText: 'Nama Item',
-                          labelStyle: const TextStyle(color: Colors.white54),
-                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+                        style: GoogleFonts.tinos(color: AppColors.ink),
+                        decoration: const InputDecoration(
+                          labelText: 'Nama Item / Item Name',
+                          hintText: 'e.g. Indomie Rebus',
                         ),
                         validator: (value) {
                           if (value == null || value.trim().isEmpty) return 'Nama item wajib diisi';
@@ -431,12 +628,11 @@ class _SessionDetailScreenState extends ConsumerState<SessionDetailScreen> {
                       const SizedBox(height: 12),
                       TextFormField(
                         controller: priceController,
-                        style: const TextStyle(color: Colors.white),
+                        style: GoogleFonts.tinos(color: AppColors.ink),
                         keyboardType: TextInputType.number,
-                        decoration: InputDecoration(
-                          labelText: 'Harga (Rp)',
-                          labelStyle: const TextStyle(color: Colors.white54),
-                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+                        decoration: const InputDecoration(
+                          labelText: 'Harga (Rp) / Price',
+                          hintText: 'e.g. 5000',
                         ),
                         validator: (value) {
                           if (value == null || value.trim().isEmpty) return 'Harga wajib diisi';
@@ -444,25 +640,37 @@ class _SessionDetailScreenState extends ConsumerState<SessionDetailScreen> {
                           return null;
                         },
                       ),
-                      const SizedBox(height: 16),
-                      SizedBox(
-                        width: double.infinity,
-                        height: 45,
-                        child: ElevatedButton(
-                          onPressed: () {
-                            if (formKey.currentState!.validate()) {
-                              _addExtraItem(
-                                nameController.text.trim(),
-                                double.parse(priceController.text),
-                              );
-                              Navigator.pop(context);
-                            }
-                          },
-                          style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF0088FF)),
-                          child: const Text('Tambah Item Kustom', style: TextStyle(color: Colors.white)),
+                      const SizedBox(height: 20),
+                      GestureDetector(
+                        onTap: () {
+                          if (formKey.currentState!.validate()) {
+                            _addExtraItem(
+                              nameController.text.trim(),
+                              double.parse(priceController.text),
+                            );
+                            Navigator.pop(context);
+                          }
+                        },
+                        child: Container(
+                          width: double.infinity,
+                          padding: const EdgeInsets.symmetric(vertical: 12),
+                          decoration: BoxDecoration(
+                            color: AppColors.frameInk,
+                            border: Border.all(color: AppColors.frameInk),
+                          ),
+                          child: Center(
+                            child: Text(
+                              'TAMBAH ITEM KUSTOM',
+                              style: GoogleFonts.arimo(
+                                color: AppColors.canvas,
+                                fontWeight: FontWeight.w900,
+                                fontSize: 12,
+                              ),
+                            ),
+                          ),
                         ),
                       ),
-                      const SizedBox(height: 20),
+                      const SizedBox(height: 24),
                     ],
                   ),
                 ),
@@ -485,10 +693,69 @@ class _SessionDetailScreenState extends ConsumerState<SessionDetailScreen> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Gagal menambahkan item: $e')),
+          SnackBar(
+            content: Text(
+              'Gagal menambahkan item: $e',
+              style: GoogleFonts.tinos(),
+            ),
+            backgroundColor: AppColors.primary,
+          ),
         );
       }
     }
+  }
+
+  Widget _buildSpecRow(String label, String value) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 6.0),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(
+            label,
+            style: GoogleFonts.tinos(
+              fontWeight: FontWeight.bold,
+              fontSize: 14,
+              color: AppColors.ink,
+            ),
+          ),
+          Text(
+            value,
+            style: GoogleFonts.tinos(
+              fontSize: 14,
+              color: AppColors.ink,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSpecWidgetRow(String label, Widget widgetValue) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 6.0),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(
+            label,
+            style: GoogleFonts.tinos(
+              fontWeight: FontWeight.bold,
+              fontSize: 14,
+              color: AppColors.ink,
+            ),
+          ),
+          widgetValue,
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSpecDivider() {
+    return Container(
+      height: 1,
+      color: Colors.grey[300],
+    );
   }
 
   @override

@@ -1,11 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 import '../../models/member_model.dart';
 import '../../models/unit_model.dart';
 import '../../providers/services_provider.dart';
 import '../../providers/auth_provider.dart';
+import '../../theme/app_theme.dart';
+import '../../widgets/shared/retro_scaffold.dart';
+import '../../widgets/shared/retro_bevel_container.dart';
 
 class StartSessionScreen extends ConsumerStatefulWidget {
   final String unitId;
@@ -23,6 +27,15 @@ class _StartSessionScreenState extends ConsumerState<StartSessionScreen> {
   bool _isLoading = false;
   String _searchMemberQuery = '';
   final _searchMemberController = TextEditingController();
+  int? _selectedDurationMinutes; // null = custom
+  final _customDurationController = TextEditingController();
+
+  static const _quickDurations = [60, 120, 180]; // 1j, 2j, 3j
+
+  int get _effectiveDuration {
+    if (_selectedDurationMinutes != null) return _selectedDurationMinutes!;
+    return int.tryParse(_customDurationController.text) ?? 0;
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -35,213 +48,505 @@ class _StartSessionScreenState extends ConsumerState<StartSessionScreen> {
       decimalDigits: 0,
     );
 
-    return Scaffold(
-      backgroundColor: const Color(0xFF0A0A0F),
-      appBar: AppBar(
-        backgroundColor: const Color(0xFF12121A),
-        title: const Text('MULAI SESI BARU', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-        elevation: 0,
-      ),
-      body: unitsStream.when(
+    return RetroScaffold(
+      showBackButton: true,
+      child: unitsStream.when(
         data: (units) {
-          // Find unit
-          final unit = units.firstWhere((u) => u.id == widget.unitId, orElse: () => null as dynamic);
+          final unit = units.firstWhere(
+            (u) => u.id == widget.unitId,
+            orElse: () => null as dynamic,
+          );
           if (unit == null) {
-            return const Center(child: Text('Unit tidak ditemukan', style: TextStyle(color: Colors.redAccent)));
+            return Center(
+              child: Text(
+                'Unit tidak ditemukan',
+                style: GoogleFonts.tinos(color: AppColors.primary, fontSize: 16, fontWeight: FontWeight.bold),
+              ),
+            );
           }
 
-          // Fetch tariff
           return ref.watch(tariffsStreamProvider).when(
             data: (tariffs) {
-              final tariff = tariffs.firstWhere((t) => t.id == unit.tariffId, orElse: () => null as dynamic);
+              final tariff = tariffs.firstWhere(
+                (t) => t.id == unit.tariffId,
+                orElse: () => null as dynamic,
+              );
 
-              return SingleChildScrollView(
-                child: Padding(
-                  padding: const EdgeInsets.all(20.0),
-                  child: Form(
-                    key: _formKey,
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        // Unit Summary card
-                        Container(
-                          padding: const EdgeInsets.all(16),
-                          decoration: BoxDecoration(
-                            color: const Color(0xFF12121A),
-                            borderRadius: BorderRadius.circular(16),
-                            border: Border.all(color: const Color(0xFF0088FF).withOpacity(0.3)),
-                          ),
-                          child: Row(
-                            children: [
-                              CircleAvatar(
-                                radius: 24,
-                                backgroundColor: const Color(0xFF0088FF).withOpacity(0.15),
-                                child: Icon(
-                                  unit.type == 'pc' ? Icons.computer : Icons.sports_esports,
-                                  color: const Color(0xFF0088FF),
-                                  size: 24,
-                                ),
-                              ),
-                              const SizedBox(width: 16),
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      unit.name,
-                                      style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white),
-                                    ),
-                                    const SizedBox(height: 4),
-                                    if (tariff != null)
-                                      Text(
-                                        'Tarif: ${currencyFormatter.format(tariff.pricePerHour)}/jam  • Min: ${tariff.minimumMinutes}m',
-                                        style: const TextStyle(fontSize: 12, color: Colors.white54),
-                                      )
-                                    else
-                                      const Text('Tarif: Loading...', style: TextStyle(fontSize: 12, color: Colors.white54)),
-                                  ],
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                        const SizedBox(height: 28),
+              final estimatedCost = _effectiveDuration > 0 && tariff != null
+                  ? ((_effectiveDuration / 60) * tariff.pricePerHour)
+                  : 0.0;
 
-                        // Form Section title
-                        const Text(
-                          'INFORMASI PELANGGAN',
-                          style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.white54, letterSpacing: 1.0),
-                        ),
-                        const SizedBox(height: 12),
-
-                        // Member Selection Box (Inline Toggle or selector)
-                        if (_selectedMember != null)
-                          Container(
-                            padding: const EdgeInsets.all(12),
-                            decoration: BoxDecoration(
-                              color: const Color(0xFF12121A),
-                              borderRadius: BorderRadius.circular(12),
-                              border: Border.all(color: const Color(0xFF00C853).withOpacity(0.5)),
-                            ),
-                            child: Row(
+              return Column(
+                children: [
+                  // Main Body Scrollable
+                  Expanded(
+                    child: SingleChildScrollView(
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+                      child: Center(
+                        child: ConstrainedBox(
+                          constraints: const BoxConstraints(maxWidth: 672),
+                          child: Form(
+                            key: _formKey,
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                const Icon(Icons.stars, color: Color(0xFF00C853)),
-                                const SizedBox(width: 12),
-                                Expanded(
-                                  child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                // Unit Header Eyebrow
+                                Container(
+                                  width: double.infinity,
+                                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                                  decoration: const BoxDecoration(
+                                    color: AppColors.tintOlive,
+                                    border: Border(
+                                      top: BorderSide(color: AppColors.frameInk),
+                                      left: BorderSide(color: AppColors.frameInk),
+                                      right: BorderSide(color: AppColors.frameInk),
+                                    ),
+                                  ),
+                                  child: Text(
+                                    'SELECTED WORKSTATION / UNIT TERPILIH',
+                                    style: GoogleFonts.arimo(
+                                      fontSize: 11,
+                                      fontWeight: FontWeight.w900,
+                                      color: AppColors.ink,
+                                    ),
+                                  ),
+                                ),
+
+                                // Unit Info Block
+                                Container(
+                                  padding: const EdgeInsets.all(16),
+                                  decoration: BoxDecoration(
+                                    color: AppColors.canvas,
+                                    border: Border.all(color: AppColors.frameInk),
+                                  ),
+                                  child: Row(
                                     children: [
-                                      Text(
-                                        _selectedMember!.name,
-                                        style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                                      Container(
+                                        width: 48,
+                                        height: 48,
+                                        decoration: BoxDecoration(
+                                          color: AppColors.tintSteel,
+                                          border: Border.all(color: AppColors.frameInk),
+                                        ),
+                                        child: Icon(
+                                          unit.type == 'pc' ? Icons.desktop_windows : Icons.sports_esports,
+                                          color: AppColors.ink,
+                                          size: 24,
+                                        ),
                                       ),
-                                      Text(
-                                        'Member ${_selectedMember!.level.toUpperCase()} • Diskon ${(_selectedMember!.discountPercentage * 100).toInt()}%',
-                                        style: const TextStyle(color: Color(0xFF00C853), fontSize: 11, fontWeight: FontWeight.w600),
+                                      const SizedBox(width: 16),
+                                      Expanded(
+                                        child: Column(
+                                          crossAxisAlignment: CrossAxisAlignment.start,
+                                          children: [
+                                            Text(
+                                              unit.name.toUpperCase(),
+                                              style: GoogleFonts.arimo(
+                                                fontSize: 16,
+                                                fontWeight: FontWeight.w900,
+                                                color: AppColors.ink,
+                                              ),
+                                            ),
+                                            const SizedBox(height: 4),
+                                            if (tariff != null)
+                                              Text(
+                                                'Tarif Sewa: ${currencyFormatter.format(tariff.pricePerHour)}/jam  •  Minimal Sesi: ${tariff.minimumMinutes} Menit',
+                                                style: GoogleFonts.tinos(
+                                                  fontSize: 12,
+                                                  color: AppColors.ink,
+                                                ),
+                                              )
+                                            else
+                                              Text(
+                                                'Memuat tarif sewa...',
+                                                style: GoogleFonts.tinos(
+                                                  fontSize: 12,
+                                                  color: AppColors.ink,
+                                                ),
+                                              ),
+                                          ],
+                                        ),
                                       ),
                                     ],
                                   ),
                                 ),
-                                IconButton(
-                                  icon: const Icon(Icons.close, color: Colors.white54),
-                                  onPressed: () {
-                                    setState(() {
-                                      _selectedMember = null;
-                                      _customerNameController.clear();
-                                    });
+                                const SizedBox(height: 20),
+
+                                // Customer Info Header
+                                Text(
+                                  'CUSTOMER CONFIGURATION / INFORMASI PELANGGAN',
+                                  style: GoogleFonts.arimo(
+                                    fontSize: 10,
+                                    fontWeight: FontWeight.bold,
+                                    color: AppColors.ink,
+                                  ),
+                                ),
+                                const SizedBox(height: 8),
+
+                                if (_selectedMember != null)
+                                  _buildSelectedMemberCard(context)
+                                else ...[
+                                  // Member selector trigger
+                                  GestureDetector(
+                                    onTap: () => _showMemberSelectionSheet(context, membersStream),
+                                    child: Container(
+                                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                                      decoration: BoxDecoration(
+                                        color: AppColors.canvas,
+                                        border: Border.all(color: AppColors.frameInk),
+                                      ),
+                                      child: Row(
+                                        children: [
+                                          const Icon(Icons.person, color: AppColors.ink, size: 18),
+                                          const SizedBox(width: 10),
+                                          Expanded(
+                                            child: Text(
+                                              'PILIH MEMBER DARI DATABASE (OPSIONAL)',
+                                              style: GoogleFonts.arimo(
+                                                fontSize: 11,
+                                                fontWeight: FontWeight.bold,
+                                                color: AppColors.ink,
+                                              ),
+                                            ),
+                                          ),
+                                          const Icon(Icons.arrow_drop_down, color: AppColors.ink),
+                                        ],
+                                      ),
+                                    ),
+                                  ),
+                                  const SizedBox(height: 8),
+
+                                  // Manual name input label
+                                  Text(
+                                    'Atau Masukkan Nama Manual / Walk-in:',
+                                    style: GoogleFonts.tinos(
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 13,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 4),
+
+                                  // Manual name input
+                                  TextFormField(
+                                    controller: _customerNameController,
+                                    style: GoogleFonts.tinos(),
+                                    decoration: const InputDecoration(
+                                      hintText: 'Masukkan nama pelanggan walk-in...',
+                                    ),
+                                    validator: (value) {
+                                      if (_selectedMember == null && (value == null || value.trim().isEmpty)) {
+                                        return 'Nama pelanggan wajib diisi';
+                                      }
+                                      return null;
+                                    },
+                                  ),
+                                ],
+                                const SizedBox(height: 20),
+
+                                // Duration Header
+                                Text(
+                                  'SESSION DURATION / DURASI BERMAIN',
+                                  style: GoogleFonts.arimo(
+                                    fontSize: 10,
+                                    fontWeight: FontWeight.bold,
+                                    color: AppColors.ink,
+                                  ),
+                                ),
+                                const SizedBox(height: 8),
+
+                                // Quick select buttons
+                                LayoutBuilder(
+                                  builder: (context, constraints) {
+                                    final isWide = constraints.maxWidth > 400;
+                                    return GridView.count(
+                                      shrinkWrap: true,
+                                      physics: const NeverScrollableScrollPhysics(),
+                                      crossAxisCount: isWide ? 4 : 2,
+                                      mainAxisSpacing: 8,
+                                      crossAxisSpacing: 8,
+                                      childAspectRatio: isWide ? 2.5 : 2,
+                                      children: [
+                                        ..._quickDurations.map((d) => _buildDurationButton(context, d, '${d ~/ 60} JAM')),
+                                        _buildCustomDurationButton(context),
+                                      ],
+                                    );
                                   },
+                                ),
+                                const SizedBox(height: 12),
+
+                                // Custom duration text input
+                                Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                                  decoration: BoxDecoration(
+                                    color: AppColors.canvas,
+                                    border: Border.all(color: AppColors.frameInk),
+                                  ),
+                                  child: Row(
+                                    children: [
+                                      const Icon(Icons.schedule, color: AppColors.ink, size: 18),
+                                      const SizedBox(width: 10),
+                                      Expanded(
+                                        child: TextField(
+                                          controller: _customDurationController,
+                                          keyboardType: TextInputType.number,
+                                          style: GoogleFonts.tinos(),
+                                          onChanged: (_) {
+                                            setState(() {
+                                              _selectedDurationMinutes = null;
+                                            });
+                                          },
+                                          decoration: const InputDecoration(
+                                            hintText: 'Masukkan durasi manual...',
+                                            border: InputBorder.none,
+                                            enabledBorder: InputBorder.none,
+                                            focusedBorder: InputBorder.none,
+                                            contentPadding: EdgeInsets.zero,
+                                          ),
+                                        ),
+                                      ),
+                                      Text(
+                                        'MENIT',
+                                        style: GoogleFonts.arimo(
+                                          fontSize: 10,
+                                          fontWeight: FontWeight.bold,
+                                          color: AppColors.ink,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
                                 ),
                               ],
                             ),
-                          )
-                        else ...[
-                          // Dropdown / searchable member option trigger
-                          GestureDetector(
-                            onTap: () {
-                              _showMemberSelectionSheet(context, membersStream);
-                            },
-                            child: Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-                              decoration: BoxDecoration(
-                                color: const Color(0xFF12121A),
-                                borderRadius: BorderRadius.circular(12),
-                                border: Border.all(color: Colors.white10),
-                              ),
-                              child: const Row(
-                                children: [
-                                  Icon(Icons.person_search_outlined, color: Color(0xFF0088FF)),
-                                  SizedBox(width: 12),
-                                  Expanded(
-                                    child: Text(
-                                      'Pilih dari Daftar Member (Opsional)',
-                                      style: TextStyle(color: Colors.white70, fontSize: 14),
-                                    ),
-                                  ),
-                                  Icon(Icons.chevron_right, color: Colors.white30),
-                                ],
-                              ),
-                            ),
-                          ),
-                          const SizedBox(height: 16),
-                          // Manual Customer Name Field
-                          TextFormField(
-                            controller: _customerNameController,
-                            style: const TextStyle(color: Colors.white),
-                            decoration: InputDecoration(
-                              labelText: 'Nama Pelanggan / Nomor PC',
-                              labelStyle: const TextStyle(color: Colors.white54),
-                              filled: true,
-                              fillColor: const Color(0xFF12121A),
-                              enabledBorder: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(12),
-                                borderSide: const BorderSide(color: Colors.white10),
-                              ),
-                              focusedBorder: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(12),
-                                borderSide: const BorderSide(color: Color(0xFF0088FF)),
-                              ),
-                            ),
-                            validator: (value) {
-                              if (value == null || value.trim().isEmpty) {
-                                return 'Nama pelanggan wajib diisi';
-                              }
-                              return null;
-                            },
-                          ),
-                        ],
-
-                        const SizedBox(height: 48),
-
-                        // Action Button
-                        SizedBox(
-                          width: double.infinity,
-                          height: 50,
-                          child: ElevatedButton(
-                            onPressed: _isLoading ? null : () => _startSession(unit),
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: const Color(0xFF0088FF),
-                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                            ),
-                            child: _isLoading
-                                ? const CircularProgressIndicator(color: Colors.white)
-                                : const Text(
-                                    'MULAI BERMAIN',
-                                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15, color: Colors.white),
-                                  ),
                           ),
                         ),
-                      ],
+                      ),
                     ),
                   ),
-                ),
+
+                  // Sticky Action Bar at Bottom
+                  _buildActionBar(context, currencyFormatter, estimatedCost, unit),
+                ],
               );
             },
             loading: () => const Center(child: CircularProgressIndicator()),
-            error: (e, __) => Center(child: Text('Gagal memuat tarif: $e', style: const TextStyle(color: Colors.redAccent))),
+            error: (e, __) => Center(
+              child: Text(
+                'Gagal memuat tarif: $e',
+                style: GoogleFonts.tinos(color: AppColors.primary),
+              ),
+            ),
           );
         },
         loading: () => const Center(child: CircularProgressIndicator()),
-        error: (e, __) => Center(child: Text('Gagal memuat data unit: $e', style: const TextStyle(color: Colors.redAccent))),
+        error: (e, __) => Center(
+          child: Text(
+            'Gagal memuat data unit: $e',
+            style: GoogleFonts.tinos(color: AppColors.primary),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSelectedMemberCard(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: AppColors.tintPeach,
+        border: Border.all(color: AppColors.frameInk),
+      ),
+      child: Row(
+        children: [
+          const Icon(Icons.stars, color: AppColors.ink),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  _selectedMember!.name.toUpperCase(),
+                  style: GoogleFonts.arimo(
+                    fontSize: 13,
+                    fontWeight: FontWeight.bold,
+                    color: AppColors.ink,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  'TINGKAT ${_selectedMember!.level.toUpperCase()} • DISKON AUTOMATIS ${(_selectedMember!.discountPercentage * 100).toInt()}%',
+                  style: GoogleFonts.tinos(
+                    fontSize: 11,
+                    fontWeight: FontWeight.bold,
+                    color: AppColors.ink,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          GestureDetector(
+            onTap: () {
+              setState(() {
+                _selectedMember = null;
+                _customerNameController.clear();
+              });
+            },
+            child: Container(
+              padding: const EdgeInsets.all(4),
+              decoration: BoxDecoration(
+                color: AppColors.canvas,
+                border: Border.all(color: AppColors.frameInk),
+              ),
+              child: const Icon(Icons.close, color: AppColors.ink, size: 16),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDurationButton(BuildContext context, int minutes, String label) {
+    final isSelected = _selectedDurationMinutes == minutes;
+    return GestureDetector(
+      onTap: () {
+        setState(() {
+          _selectedDurationMinutes = minutes;
+          _customDurationController.clear();
+        });
+      },
+      child: Container(
+        decoration: BoxDecoration(
+          color: isSelected ? AppColors.frameInk : AppColors.canvas,
+          border: Border.all(
+            color: AppColors.frameInk,
+            width: 1.0,
+          ),
+        ),
+        alignment: Alignment.center,
+        child: Text(
+          label,
+          style: GoogleFonts.arimo(
+            color: isSelected ? AppColors.canvas : AppColors.ink,
+            fontSize: 11,
+            fontWeight: FontWeight.w900,
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildCustomDurationButton(BuildContext context) {
+    final isSelected = _selectedDurationMinutes == null;
+    return GestureDetector(
+      onTap: () {
+        setState(() {
+          _selectedDurationMinutes = null;
+          _customDurationController.clear();
+        });
+      },
+      child: Container(
+        decoration: BoxDecoration(
+          color: isSelected ? AppColors.frameInk : AppColors.canvas,
+          border: Border.all(
+            color: AppColors.frameInk,
+            width: 1.0,
+          ),
+        ),
+        alignment: Alignment.center,
+        child: Text(
+          'WALK-IN / PERS',
+          style: GoogleFonts.arimo(
+            color: isSelected ? AppColors.canvas : AppColors.ink,
+            fontSize: 10,
+            fontWeight: FontWeight.w900,
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildActionBar(
+    BuildContext context,
+    NumberFormat currencyFormatter,
+    double estimatedCost,
+    UnitModel unit,
+  ) {
+    return Container(
+      padding: EdgeInsets.only(
+        left: 16,
+        right: 16,
+        top: 16,
+        bottom: MediaQuery.of(context).padding.bottom + 16,
+      ),
+      decoration: const BoxDecoration(
+        color: AppColors.canvas,
+        border: Border(top: BorderSide(color: AppColors.frameInk, width: 2.0)),
+      ),
+      child: Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 672),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  Text(
+                    'ESTIMATED COST / ESTIMASI BIAYA:',
+                    style: GoogleFonts.arimo(
+                      color: AppColors.ink,
+                      fontSize: 10,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  Text(
+                    estimatedCost > 0 ? currencyFormatter.format(estimatedCost) : 'Rp 0',
+                    style: GoogleFonts.tinos(
+                      color: AppColors.primary,
+                      fontSize: 24,
+                      fontWeight: FontWeight.w900,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+
+              // Start button - primary flat button
+              GestureDetector(
+                onTap: _isLoading ? null : () => _startSession(unit),
+                child: Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.symmetric(vertical: 14),
+                  decoration: BoxDecoration(
+                    color: AppColors.frameInk,
+                    border: Border.all(color: AppColors.frameInk),
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      _isLoading
+                          ? const SizedBox(
+                              width: 16,
+                              height: 16,
+                              child: CircularProgressIndicator(color: AppColors.canvas, strokeWidth: 2),
+                            )
+                          : const Icon(Icons.play_arrow, color: AppColors.canvas, size: 20),
+                      const SizedBox(width: 8),
+                      Text(
+                        'MULAI BERMAIN / START SESSION',
+                        style: GoogleFonts.arimo(
+                          color: AppColors.canvas,
+                          fontSize: 12,
+                          fontWeight: FontWeight.w900,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }
@@ -250,35 +555,33 @@ class _StartSessionScreenState extends ConsumerState<StartSessionScreen> {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
-      backgroundColor: const Color(0xFF12121A),
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      backgroundColor: AppColors.canvas,
+      shape: const Border(
+        top: BorderSide(color: AppColors.frameInk, width: 2.0),
       ),
       builder: (context) {
         return StatefulBuilder(
           builder: (context, setSheetState) {
             return Container(
               height: MediaQuery.of(context).size.height * 0.75,
-              padding: const EdgeInsets.all(20.0),
+              padding: const EdgeInsets.all(16.0),
               child: Column(
                 children: [
-                  Container(width: 40, height: 4, decoration: BoxDecoration(color: Colors.white24, borderRadius: BorderRadius.circular(2))),
-                  const SizedBox(height: 16),
-                  const Text(
-                    'PILIH MEMBER',
-                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white),
+                  Text(
+                    'SELECT MEMBER / DATA PELANGGAN',
+                    style: GoogleFonts.arimo(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w900,
+                      color: AppColors.ink,
+                    ),
                   ),
-                  const SizedBox(height: 16),
+                  const SizedBox(height: 12),
                   TextField(
                     controller: _searchMemberController,
-                    style: const TextStyle(color: Colors.white),
-                    decoration: InputDecoration(
-                      hintText: 'Cari nama/nomor HP...',
-                      hintStyle: const TextStyle(color: Colors.white30, fontSize: 13),
-                      prefixIcon: const Icon(Icons.search, color: Color(0xFF0088FF)),
-                      filled: true,
-                      fillColor: const Color(0xFF0A0A0F),
-                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+                    style: GoogleFonts.tinos(),
+                    decoration: const InputDecoration(
+                      hintText: 'Cari berdasarkan nama atau no HP...',
+                      prefixIcon: Icon(Icons.search, color: AppColors.ink),
                     ),
                     onChanged: (val) {
                       setSheetState(() {
@@ -286,7 +589,7 @@ class _StartSessionScreenState extends ConsumerState<StartSessionScreen> {
                       });
                     },
                   ),
-                  const SizedBox(height: 16),
+                  const SizedBox(height: 12),
                   Expanded(
                     child: membersStream.when(
                       data: (members) {
@@ -296,26 +599,53 @@ class _StartSessionScreenState extends ConsumerState<StartSessionScreen> {
                         }).toList();
 
                         if (filtered.isEmpty) {
-                          return const Center(child: Text('Tidak ada member.', style: TextStyle(color: Colors.white38)));
+                          return Center(
+                            child: Text(
+                              'Tidak ada member.',
+                              style: GoogleFonts.tinos(color: Colors.grey[600]),
+                            ),
+                          );
                         }
 
-                        return ListView.builder(
+                        return ListView.separated(
                           itemCount: filtered.length,
+                          separatorBuilder: (context, index) => const Divider(color: AppColors.frameInk, height: 1),
                           itemBuilder: (context, index) {
                             final member = filtered[index];
                             return ListTile(
-                              title: Text(member.name, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-                              subtitle: Text(member.phone, style: const TextStyle(color: Colors.white54, fontSize: 12)),
-                              trailing: Text(
-                                member.level.toUpperCase(),
-                                style: TextStyle(
-                                  color: member.level == 'gold'
-                                      ? const Color(0xFFFFD700)
-                                      : member.level == 'silver'
-                                          ? const Color(0xFFC0C0C0)
-                                          : const Color(0xFF0088FF),
+                              contentPadding: EdgeInsets.zero,
+                              title: Text(
+                                member.name,
+                                style: GoogleFonts.tinos(
                                   fontWeight: FontWeight.bold,
+                                  fontSize: 14,
+                                  color: AppColors.ink,
+                                ),
+                              ),
+                              subtitle: Text(
+                                member.phone,
+                                style: GoogleFonts.tinos(
                                   fontSize: 11,
+                                  color: Colors.grey[700],
+                                ),
+                              ),
+                              trailing: Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                decoration: BoxDecoration(
+                                  color: member.level == 'gold'
+                                      ? AppColors.yellowSticker
+                                      : (member.level == 'silver'
+                                          ? const Color(0xFFDCDCDC)
+                                          : AppColors.canvas),
+                                  border: Border.all(color: AppColors.frameInk),
+                                ),
+                                child: Text(
+                                  member.level.toUpperCase(),
+                                  style: GoogleFonts.arimo(
+                                    fontSize: 8,
+                                    fontWeight: FontWeight.bold,
+                                    color: AppColors.ink,
+                                  ),
                                 ),
                               ),
                               onTap: () {
@@ -330,7 +660,12 @@ class _StartSessionScreenState extends ConsumerState<StartSessionScreen> {
                         );
                       },
                       loading: () => const Center(child: CircularProgressIndicator()),
-                      error: (e, __) => Text('Error: $e', style: const TextStyle(color: Colors.redAccent)),
+                      error: (e, __) => Center(
+                        child: Text(
+                          'Error: $e',
+                          style: GoogleFonts.tinos(color: AppColors.primary),
+                        ),
+                      ),
                     ),
                   ),
                 ],
@@ -363,12 +698,18 @@ class _StartSessionScreenState extends ConsumerState<StartSessionScreen> {
       );
 
       if (mounted) {
-        context.pop(); // Go back to dashboard
+        context.pop();
       }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Gagal memulai sesi: $e')),
+          SnackBar(
+            content: Text(
+              'Gagal memulai sesi: $e',
+              style: GoogleFonts.tinos(),
+            ),
+            backgroundColor: AppColors.primary,
+          ),
         );
       }
     } finally {
@@ -384,6 +725,7 @@ class _StartSessionScreenState extends ConsumerState<StartSessionScreen> {
   void dispose() {
     _customerNameController.dispose();
     _searchMemberController.dispose();
+    _customDurationController.dispose();
     super.dispose();
   }
 }

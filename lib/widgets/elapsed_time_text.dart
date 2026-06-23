@@ -59,10 +59,7 @@ class _ElapsedTimeTextState extends State<ElapsedTimeText> {
     final minutes = duration.inMinutes.remainder(60);
     final seconds = duration.inSeconds.remainder(60);
 
-    if (hours > 0) {
-      return '${twoDigits(hours)}:${twoDigits(minutes)}:${twoDigits(seconds)}';
-    }
-    return '${twoDigits(minutes)}:${twoDigits(seconds)}';
+    return '${twoDigits(hours)}:${twoDigits(minutes)}:${twoDigits(seconds)}';
   }
 
   @override

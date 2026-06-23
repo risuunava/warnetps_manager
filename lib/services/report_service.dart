@@ -81,6 +81,10 @@ class ReportService {
       'count': entry.value,
     }).toList();
 
+    // Get recent transactions sorted by endTime descending
+    final recentTransactions = List<SessionModel>.from(sessions)
+      ..sort((a, b) => (b.endTime ?? DateTime.now()).compareTo(a.endTime ?? DateTime.now()));
+
     return {
       'totalRevenue': totalRevenue,
       'pcRevenue': pcRevenue,
@@ -91,6 +95,7 @@ class ReportService {
       'busiestUnits': busiestUnits,
       'hourlyCount': hourlyCount,
       'dailyRevenue': dailyRevenueMap,
+      'recentTransactions': recentTransactions,
     };
   }
 
@@ -112,5 +117,37 @@ class ReportService {
 
     final sessions = await getCompletedSessions(start, end);
     return generateReportStats(sessions);
+  }
+
+  // Stream stats for specific period to auto-update without refresh
+  Stream<Map<String, dynamic>> streamPeriodStats(String period) {
+    final now = DateTime.now();
+    late DateTime start;
+    final end = now;
+
+    if (period == 'today') {
+      start = DateTime(now.year, now.month, now.day);
+    } else if (period == 'week') {
+      start = now.subtract(const Duration(days: 7));
+    } else if (period == 'month') {
+      start = DateTime(now.year, now.month, 1);
+    } else {
+      start = DateTime(now.year, now.month, now.day);
+    }
+
+    final endOfDay = DateTime(end.year, end.month, end.day, 23, 59, 59);
+
+    return _db
+        .collection('sessions')
+        .where('endTime', isGreaterThanOrEqualTo: Timestamp.fromDate(start))
+        .where('endTime', isLessThanOrEqualTo: Timestamp.fromDate(endOfDay))
+        .snapshots()
+        .map((snapshot) {
+           final sessions = snapshot.docs
+              .map((doc) => SessionModel.fromMap(doc.data(), doc.id))
+              .where((s) => s.status == 'completed')
+              .toList();
+           return generateReportStats(sessions);
+        });
   }
 }

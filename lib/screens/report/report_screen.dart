@@ -7,9 +7,9 @@ import '../../theme/app_theme.dart';
 
 final reportPeriodProvider = StateProvider<String>((ref) => 'today');
 
-final periodStatsProvider = FutureProvider.autoDispose.family<Map<String, dynamic>, String>((ref, period) async {
+final periodStatsProvider = StreamProvider.autoDispose.family<Map<String, dynamic>, String>((ref, period) {
   final service = ref.watch(reportServiceProvider);
-  return await service.getPeriodStats(period);
+  return service.streamPeriodStats(period);
 });
 
 class ReportScreen extends ConsumerWidget {
@@ -74,7 +74,7 @@ class ReportScreen extends ConsumerWidget {
                   final totalRevenue = (stats['totalRevenue'] as num).toDouble();
                   final pcRevenue = (stats['pcRevenue'] as num).toDouble();
                   final psRevenue = (stats['psRevenue'] as num).toDouble();
-                  final busiestUnits = stats['busiestUnits'] as List<dynamic>;
+                  final recentTransactions = (stats['recentTransactions'] as List<dynamic>?) ?? [];
 
                   final totalForPercentage = pcRevenue + psRevenue;
                   final pcPct = totalForPercentage > 0 ? (pcRevenue / totalForPercentage * 100).round() : 0;
@@ -237,7 +237,7 @@ class ReportScreen extends ConsumerWidget {
                         decoration: BoxDecoration(
                           border: Border.all(color: AppColors.frameInk),
                         ),
-                        child: busiestUnits.isEmpty
+                        child: recentTransactions.isEmpty
                             ? Container(
                                 color: AppColors.canvas,
                                 padding: const EdgeInsets.all(24),
@@ -272,13 +272,13 @@ class ReportScreen extends ConsumerWidget {
                                   ListView.separated(
                                     shrinkWrap: true,
                                     physics: const NeverScrollableScrollPhysics(),
-                                    itemCount: busiestUnits.length > 5 ? 5 : busiestUnits.length,
+                                    itemCount: recentTransactions.length > 5 ? 5 : recentTransactions.length,
                                     separatorBuilder: (context, index) => const Divider(color: AppColors.frameInk, height: 1),
                                     itemBuilder: (context, index) {
-                                      final unit = busiestUnits[index];
+                                      final tx = recentTransactions[index];
                                       final Color rowBg = index.isEven ? AppColors.canvas : const Color(0xFFF9F9F9);
-                                      final isPC = (unit['type'] ?? 'pc') == 'pc';
-                                      final timeStr = '${14 - index}:${(30 + index * 7) % 60 < 10 ? '0' : ''}${(30 + index * 7) % 60}';
+                                      final isPC = tx.unitName.toLowerCase().contains('pc');
+                                      final timeStr = tx.endTime != null ? DateFormat('HH:mm').format(tx.endTime!) : '-';
 
                                       return Container(
                                         color: rowBg,
@@ -296,7 +296,7 @@ class ReportScreen extends ConsumerWidget {
                                                   ),
                                                   const SizedBox(width: 4),
                                                   Text(
-                                                    unit['name'] ?? '-',
+                                                    tx.unitName.replaceFirst('PS Station ', 'PS '),
                                                     style: GoogleFonts.tinos(fontWeight: FontWeight.bold, fontSize: 13),
                                                   ),
                                                 ],
@@ -305,14 +305,14 @@ class ReportScreen extends ConsumerWidget {
                                             Expanded(
                                               flex: 4,
                                               child: Text(
-                                                'TRX-${1000 + index} • ${index % 2 == 0 ? 'User ID: ${442 + index}' : 'Walk-in'}',
+                                                '${tx.id.substring(0, 8)} • ${tx.memberId != null ? 'Member' : 'Walk-in'}',
                                                 style: GoogleFonts.tinos(fontSize: 12),
                                               ),
                                             ),
                                             Expanded(
                                               flex: 3,
                                               child: Text(
-                                                currencyFormatter.format((unit['revenue'] ?? 0)),
+                                                currencyFormatter.format(tx.total),
                                                 style: GoogleFonts.tinos(fontWeight: FontWeight.bold, fontSize: 13, color: AppColors.tintOlive),
                                               ),
                                             ),
@@ -333,17 +333,30 @@ class ReportScreen extends ConsumerWidget {
                       ),
                       const SizedBox(height: 12),
 
-                      // Underlined Link blue button
+                      // Underlined Link blue button -> Updated to button-secondary
                       Center(
-                        child: TextButton(
-                          onPressed: () {},
-                          child: Text(
-                            'MUAT LEBIH BANYAK LOG TRANSAKSI',
-                            style: GoogleFonts.tinos(
-                              color: AppColors.link,
-                              fontWeight: FontWeight.bold,
-                              decoration: TextDecoration.underline,
-                              decorationColor: AppColors.link,
+                        child: InkWell(
+                          onTap: () {},
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                            decoration: BoxDecoration(
+                              color: AppColors.canvas,
+                              border: Border.all(color: AppColors.frameInk),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Text(
+                                  'MUAT LEBIH BANYAK LOG TRANSAKSI',
+                                  style: GoogleFonts.arimo(
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.bold,
+                                    color: AppColors.ink,
+                                  ),
+                                ),
+                                const SizedBox(width: 8),
+                                const Icon(Icons.arrow_drop_down, size: 16, color: AppColors.ink),
+                              ],
                             ),
                           ),
                         ),
